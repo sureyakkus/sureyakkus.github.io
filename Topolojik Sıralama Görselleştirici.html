@@ -1,0 +1,732 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Topolojik Sıralama Görselleştirici</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+
+/* Layout: sol sütun = yönlü graf, oynatma, açıklama; sağ sütun = sözde kod, in-degree/kuyruk/yığın, doğrusal yerleşim. Graf kartı kareli defter kâğıdı gibi. */
+:root{
+  --bg:#f2f5fa; --surface:#ffffff; --ink:#172033; --muted:#566178; --line:#d8dfec; --grid:#e8edf6;
+  --accent:#2b52c8; --accent-ink:#ffffff; --accent-soft:#e4ebfc;
+  --open:#c8690a; --open-soft:#fdebd2; --done:#1c8453; --done-soft:#d8f0e3;
+  --edge:#8e9ab3; --code-bg:#eff3fa; --code-on:#dce6ff;
+  --font-head:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1320; --surface:#161d2d; --ink:#e7ecf8; --muted:#9ba7c0; --line:#2a3550; --grid:#1c2438;
+    --accent:#7ea0ff; --accent-ink:#0e1320; --accent-soft:#223157;
+    --open:#f2a24a; --open-soft:#3b2a13; --done:#52c88f; --done-soft:#143a2a;
+    --edge:#59668a; --code-bg:#111828; --code-on:#25345f; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1320; --surface:#161d2d; --ink:#e7ecf8; --muted:#9ba7c0; --line:#2a3550; --grid:#1c2438;
+  --accent:#7ea0ff; --accent-ink:#0e1320; --accent-soft:#223157;
+  --open:#f2a24a; --open-soft:#3b2a13; --done:#52c88f; --done-soft:#143a2a;
+  --edge:#59668a; --code-bg:#111828; --code-on:#25345f; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--font-head);font-size:clamp(1.5rem,4vw,2rem);line-height:1.15;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card h2{font-family:var(--font-head);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:500}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+/* kontroller */
+.controls{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.lbl{font-size:.78rem;color:var(--muted);font-weight:500}
+select,input[type=number],textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:36px;max-width:100%}
+textarea{font-family:var(--font-mono);font-size:.85rem;width:100%;resize:vertical}
+input[type=range]{accent-color:var(--accent);width:100%}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-weight:600;border:0;background:var(--surface);color:var(--ink);padding:8px 18px;cursor:pointer;min-height:38px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer;min-height:38px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600;min-width:104px}
+.btn:disabled{opacity:.45;cursor:default}
+:is(button,select,input,textarea):focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.note{font-size:.82rem;color:var(--muted);margin:0}
+.err{color:var(--open);font-size:.85rem;margin:4px 0 0}
+
+/* graf */
+.graphcard{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;background-color:var(--surface)}
+#svg{display:block;width:100%;height:auto;max-height:480px}
+.edge{stroke:var(--edge);stroke-width:2.2;transition:stroke .25s,stroke-width .25s}
+.edge.skip{stroke-dasharray:7 6;opacity:.75}
+.edge.tree{stroke:var(--done);stroke-width:5.5;stroke-dasharray:none;opacity:1}
+.edge.look{stroke:var(--open);stroke-width:5.5;stroke-dasharray:none;opacity:1}
+.node circle.c{fill:var(--surface);stroke:var(--edge);stroke-width:2.5;transition:fill .25s,stroke .25s}
+.node text.t{fill:var(--ink);font:600 18px var(--font-head);text-anchor:middle;dominant-baseline:central;transition:fill .25s}
+.node.open circle.c{fill:var(--open-soft);stroke:var(--open)}
+.node.done circle.c{fill:var(--done-soft);stroke:var(--done)}
+.node.cur circle.c{fill:var(--accent);stroke:var(--accent)}
+.node.cur text.t{fill:var(--accent-ink)}
+.node.ring circle.c{stroke:var(--accent);stroke-width:5}
+.node .badge circle{fill:var(--ink)}
+.node .badge text{fill:var(--bg);font:600 12px var(--font-mono);text-anchor:middle;dominant-baseline:central}
+.node .dist{fill:var(--muted);font:500 13px var(--font-mono);text-anchor:middle}
+.ginfo{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;font-size:.82rem;color:var(--muted);margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:50%;border:2.5px solid var(--edge);background:var(--surface);display:inline-block}
+.sw.open{background:var(--open-soft);border-color:var(--open)}
+.sw.done{background:var(--done-soft);border-color:var(--done)}
+.sw.cur{background:var(--accent);border-color:var(--accent)}
+.ln{width:20px;height:0;border-top:5px solid var(--done);display:inline-block}
+.ln.look{border-color:var(--open)}
+.ln.skip{border-top:2px dashed var(--edge)}
+
+/* oynatma */
+.play{display:flex;flex-direction:column;gap:10px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stepline{display:flex;gap:10px;align-items:center}
+.stepline output{font-family:var(--font-mono);font-size:.82rem;color:var(--muted);white-space:nowrap}
+
+/* açıklama */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chip{font-family:var(--font-mono);font-size:.76rem;background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:2px 10px}
+#explain{margin:0;min-height:5.2em;font-size:1rem}
+#explain b{font-family:var(--font-head);font-weight:700}
+.sum{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.sum .k{color:var(--muted);font-size:.78rem;font-weight:500;display:block}
+
+/* sözde kod */
+.code{font-family:var(--font-mono);font-size:.86rem;background:var(--code-bg);border-radius:8px;padding:6px 0;overflow-x:auto}
+.cl{display:flex;gap:10px;padding:5px 12px;border-left:4px solid transparent;transition:background .2s}
+.cl .tx{white-space:pre-wrap;min-width:0}
+.cl .n{color:var(--muted);width:1.4em;text-align:right;flex:none;user-select:none}
+.cl .cm{color:var(--muted)}
+.cl.on{background:var(--code-on);border-left-color:var(--accent)}
+.cl.on .tx{font-weight:500}
+
+/* yığın / kuyruk / çıktı */
+.ds-hint{font-size:.82rem;color:var(--muted);margin:0 0 8px}
+.stack{display:flex;flex-direction:column-reverse;gap:4px;align-items:stretch;max-width:150px;min-height:44px;border:2px solid var(--line);border-top:0;border-radius:0 0 8px 8px;padding:6px}
+.queue{display:flex;gap:4px;flex-wrap:wrap;align-items:center;min-height:50px;border-block:2px solid var(--line);padding:6px 0}
+.cell{font:600 15px var(--font-head);text-align:center;min-width:38px;padding:5px 8px;border-radius:6px;background:var(--open-soft);border:1.5px solid var(--open);position:relative}
+.cell.top{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.cell.front{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tag{font-size:.7rem;font-family:var(--font-mono);color:var(--muted);margin-inline:6px}
+.empty{color:var(--muted);font-size:.85rem;font-style:italic;padding:2px 4px}
+.sec{margin-top:14px}
+.sec h3{font-size:.78rem;font-weight:500;color:var(--muted);margin:0 0 6px}
+.chipset{display:flex;flex-wrap:wrap;gap:6px}
+.ch{font:600 14px var(--font-head);background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:3px 9px;min-width:34px;text-align:center}
+.ch.d{font-family:var(--font-mono);font-weight:500}
+.ch.new{background:var(--accent-soft);border-color:var(--accent)}
+
+/* komşuluk listesi */
+.adj{display:flex;flex-direction:column;gap:4px}
+.ar{display:flex;gap:10px;align-items:center;padding:3px 6px;border-radius:6px;border-left:4px solid transparent}
+.ar.cur{background:var(--code-on);border-left-color:var(--accent)}
+.ar .v{font:700 15px var(--font-head);width:1.6em}
+.ar .ar-arrow{color:var(--muted);font-family:var(--font-mono)}
+.ar .nb{display:flex;gap:4px;flex-wrap:wrap}
+.nb span{font:500 14px var(--font-mono);padding:1px 8px;border-radius:5px;border:1px solid var(--line)}
+.nb span.look{background:var(--open-soft);border-color:var(--open);font-weight:600}
+.randrow[hidden],.customrow[hidden],.sum[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Topolojik sıralama: uyarı rengi, oklar, doğrusal yerleşim */
+:root{--bad:#c0392b;--bad-soft:#fbe1dd}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bad:#ff8a7a;--bad-soft:#4a2320}}
+:root[data-theme="dark"]{--bad:#ff8a7a;--bad-soft:#4a2320}
+.edge{stroke-linecap:round}
+.edge.removed{stroke-dasharray:6 6;opacity:.45}
+.edge.tree{stroke-width:4}
+.edge.back{stroke:var(--bad);stroke-width:4.5;stroke-dasharray:none;opacity:1}
+.mk-def{fill:var(--edge)}.mk-tree{fill:var(--done)}.mk-look{fill:var(--open)}.mk-bad{fill:var(--bad)}
+.node.bad circle.c{stroke:var(--bad);stroke-width:5;fill:var(--bad-soft)}
+.node.ring circle.c{stroke:var(--bad);stroke-width:5}
+.node.bad text.t{fill:var(--ink)}
+.node .sub{fill:var(--muted);font:500 13px var(--font-mono);text-anchor:middle}
+.node .badge circle{fill:var(--ink)}
+.node.gone .badge{opacity:.45}
+.ch.zero{background:var(--open-soft);border-color:var(--open)}
+.ch.gone{opacity:.45;text-decoration:line-through}
+.ch.act{background:var(--open-soft);border-color:var(--open)}
+.ch.cyc{background:var(--bad-soft);border-color:var(--bad)}
+.ch.dn{background:var(--done-soft);border-color:var(--done)}
+.strip{width:100%;height:auto;display:block;margin-top:2px}
+.strip .sn{fill:var(--done-soft);stroke:var(--done);stroke-width:2.5}
+.strip .st{fill:var(--ink);font:600 15px var(--font-head);text-anchor:middle;dominant-baseline:central}
+.strip .sa{fill:none;stroke:var(--edge);stroke-width:2}
+.strip .mk{fill:var(--edge)}
+.checks{display:flex;flex-wrap:wrap;gap:4px 12px;font:500 13px var(--font-mono)}
+.checks span::before{content:"✓ ";color:var(--done);font-weight:700}
+.sumerr{color:var(--bad);font-weight:600}
+.field[hidden],.sec[hidden]{display:none!important}
+.chk{display:flex;gap:8px;align-items:center;min-height:36px;font-size:.9rem}
+.chk input{width:18px;height:18px;accent-color:var(--accent)}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Topolojik Sıralama Görselleştirici</h1>
+    <p class="sub">BIL231 Algoritmalar, Ders 7 – Soru 4. Bir iş sırasının (X → Y: X, Y'den önce) nasıl bulunduğunu sözde kod ve yönlü graf üzerinde adım adım izleyin.</p>
+  </header>
+
+  <section class="card controls" aria-label="Ayarlar">
+    <div class="row">
+      <div class="field">
+        <span class="lbl" id="algolbl">Yöntem</span>
+        <div class="seg" role="group" aria-labelledby="algolbl">
+          <button type="button" id="b-kahn" aria-pressed="true">Kahn (in-degree)</button>
+          <button type="button" id="b-dfs" aria-pressed="false">DFS (bitiş sırası)</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="src">Graf</label>
+        <select id="src">
+          <option value="q4">Soru 4 grafı (7 görev, DAG)</option>
+          <option value="q4c">Soru 4(c): G → A eklenmiş (döngülü)</option>
+          <option value="random">Rastgele graf üret</option>
+          <option value="custom">Kendi grafımı gireyim</option>
+        </select>
+      </div>
+    </div>
+    <div class="row randrow" id="randrow" hidden>
+      <div class="field">
+        <label for="rn">Düğüm sayısı: <output id="rnout">7</output></label>
+        <input type="range" id="rn" min="4" max="10" value="7">
+      </div>
+      <div class="field">
+        <label for="rd">Ok yoğunluğu</label>
+        <select id="rd"><option value="seyrek">Seyrek</option><option value="orta" selected>Orta</option><option value="yogun">Yoğun</option></select>
+      </div>
+      <div class="field">
+        <label for="rs">Seed (aynı seed, aynı graf)</label>
+        <input type="number" id="rs" min="0" max="99999" value="7" style="width:110px">
+      </div>
+      <label class="chk" for="rc"><input type="checkbox" id="rc"> Döngü ekle</label>
+      <button type="button" class="btn primary" id="rnew">Yeni rastgele graf</button>
+    </div>
+    <div class="customrow" id="customrow" hidden>
+      <div class="field">
+        <label for="ctext">Okları <b>X&gt;Y</b> biçiminde yazın (örnek: A&gt;B, A&gt;C, B&gt;D). Okun yönü X → Y: X, Y'den önce gelmeli. En çok 10 düğüm, ad en fazla 3 karakter.</label>
+        <textarea id="ctext" rows="3">A>B, A>C, B>D, C>D, D>E</textarea>
+      </div>
+      <div class="btns" style="margin-top:8px"><button type="button" class="btn primary" id="capply">Grafı uygula</button></div>
+      <p class="err" id="cerr" role="alert" hidden></p>
+    </div>
+    <p class="note">Birden fazla düğüm aynı anda hazırsa alfabetik ilk gelen seçilir; bu yüzden aynı grafta iki yöntem farklı ama geçerli sıralar bulabilir. Klavye: ← geri, → ileri, boşluk oynat/duraklat.</p>
+  </section>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card graphcard" aria-label="Graf">
+        <svg id="svg" viewBox="0 0 640 420" role="img" aria-label="Yönlü graf görseli"></svg>
+        <div class="ginfo"><span id="ginfo"></span><div class="legend" id="legend"></div></div>
+      </section>
+
+      <section class="card play" aria-label="Oynatma">
+        <div class="btns">
+          <button type="button" class="btn" id="first">Başa</button>
+          <button type="button" class="btn" id="prev">‹ Geri</button>
+          <button type="button" class="btn primary" id="play">Oynat</button>
+          <button type="button" class="btn" id="next">İleri ›</button>
+          <button type="button" class="btn" id="last">Sona</button>
+          <div class="field" style="margin-left:auto">
+            <label for="speed">Hız</label>
+            <select id="speed"><option value="1800">Yavaş</option><option value="1100" selected>Normal</option><option value="550">Hızlı</option><option value="250">Çok hızlı</option></select>
+          </div>
+        </div>
+        <div class="stepline">
+          <input type="range" id="slider" min="0" max="0" value="0" aria-label="Adım">
+          <output id="stepout" for="slider">0 / 0</output>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Bu adımda ne oluyor">
+        <h2>Bu adımda ne oluyor?</h2>
+        <div class="chips"><span class="chip" id="c-step"></span><span class="chip" id="c-line"></span><span class="chip" id="c-prog"></span></div>
+        <p id="explain" aria-live="polite"></p>
+        <div class="sum" id="sum" hidden></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card" aria-label="Sözde kod">
+        <h2 id="codetitle">Sözde kod</h2>
+        <div class="code" id="code"></div>
+      </section>
+      <section class="card" aria-label="Veri yapıları">
+        <h2 id="dstitle"></h2>
+        <p class="ds-hint" id="dshint"></p>
+        <div id="ds"></div>
+      </section>
+      <section class="card" aria-label="Doğrusal yerleşim">
+        <h2>Doğrusal yerleşim</h2>
+        <p class="ds-hint" id="s2hint"></p>
+        <div id="s2"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+/*ENGINE-START*/
+const cmp = (a, b) => a.localeCompare(b, 'tr', { numeric: true });
+const dkey = (a, b) => a + '>' + b;
+const B = (t) => '<b>' + t + '</b>';
+
+function makeDGraph(nodes, pairs, pos) {
+  const seen = new Set(), edges = [];
+  pairs.forEach(([a, b]) => { if (a === b) return; const k = dkey(a, b); if (seen.has(k)) return; seen.add(k); edges.push([a, b]); });
+  edges.sort((x, y) => cmp(x[0], y[0]) || cmp(x[1], y[1]));
+  nodes = [...nodes].sort(cmp);
+  const out = {}, inn = {}; nodes.forEach((n) => { out[n] = []; inn[n] = []; });
+  edges.forEach(([a, b]) => { out[a].push(b); inn[b].push(a); });
+  nodes.forEach((n) => { out[n].sort(cmp); inn[n].sort(cmp); });
+  return { nodes, edges, out, inn, pos };
+}
+
+function validOrder(g, order) {
+  if (order.length !== g.nodes.length) return false;
+  const p = {}; order.forEach((v, i) => (p[v] = i));
+  return g.edges.every(([a, b]) => p[a] < p[b]);
+}
+
+function buildKahn(g) {
+  const steps = [], n = g.nodes.length;
+  const indeg = {}; g.nodes.forEach((v) => (indeg[v] = g.inn[v].length));
+  const removed = []; let avail = []; const out = [];
+  const snap = (o) => steps.push(Object.assign({ indeg: Object.assign({}, indeg), avail: [...avail], out: [...out], removed: [...removed], look: null, cur: null, stuck: null }, o));
+  snap({ line: 0, text: `Her düğümün <b>giriş derecesi</b> (in-degree) hesaplandı: düğüme gelen ok sayısı, yani o düğümden önce bitmesi gereken iş sayısı. Giriş derecesi 0 olan bir düğümün hiçbir ön koşulu yoktur.` });
+  avail = g.nodes.filter((v) => indeg[v] === 0);
+  snap({ line: 1, text: avail.length ? `Giriş derecesi 0 olan düğümler kuyruğa (Q) alındı: ${B(avail.join(', '))}. Bunlar hemen sıraya konabilir.` : `Giriş derecesi 0 olan hiçbir düğüm yok. Her düğümün bir ön koşulu var, bu yüzden hiçbiri ilk sırada olamaz.` });
+  for (;;) {
+    if (!avail.length) { snap({ line: 2, text: `Q boş → <b>while</b> döngüsü biter.` }); break; }
+    snap({ line: 2, text: `Q boş değil (${avail.join(', ')}) → döngü sürer.` });
+    const u = avail.shift(); out.push(u);
+    snap({
+      line: 3, cur: u,
+      text: `${B(u)} Q'dan çıkarıldı ve çıktıya yazıldı (${out.length}. sıra). Giriş derecesi 0 olduğu için ${u}'dan önce bitmesi gereken iş kalmadı.` +
+        (avail.length ? ` Aynı anda hazır olan başka düğümler de vardı (${avail.join(', ')}); alfabetik ilk gelen seçildi. Başka bir seçim de geçerli bir sıra verirdi.` : ''),
+    });
+    const outs = g.out[u];
+    if (!outs.length) snap({ line: 4, cur: u, text: `${B(u)}'nun çıkan oku yok: ${u}'yu bekleyen düğüm yok, sıradaki adıma geçilir.` });
+    for (const v of outs) {
+      const k = dkey(u, v);
+      snap({ line: 4, cur: u, look: k, text: `${B(u + ' → ' + v)} oku inceleniyor: ${v}, ${u}'nun bitmesini bekliyordu. ${u} sıraya alındığı için bu bağımlılık artık sağlandı.` });
+      removed.push(k); const was = indeg[v]; indeg[v]--;
+      snap({ line: 5, cur: u, look: k, text: `${u} → ${v} kenarı grafikten silindi: indeg[${v}] ${was} → ${B(indeg[v])}.` });
+      if (indeg[v] === 0) {
+        avail.push(v); avail.sort(cmp);
+        snap({ line: 6, cur: u, look: k, text: `indeg[${v}] = 0: ${B(v)}'nin bekleyen ön koşulu kalmadı, Q'ya eklendi.` });
+      } else {
+        snap({ line: 6, cur: u, look: k, text: `indeg[${v}] = ${indeg[v]} > 0: ${B(v)} hâlâ ${indeg[v]} ön koşul bekliyor, henüz hazır değil. Q'ya eklenmez.` });
+      }
+    }
+  }
+  const stuck = g.nodes.filter((v) => !out.includes(v));
+  if (out.length === n) snap({ line: 7, done: true, ok: true, text: `${B('Kahn tamamlandı.')} Çıktıda ${n} düğümün hepsi var (|çıktı| = n) → geçerli topolojik sıra: ${B(out.join(' → '))}.` });
+  else snap({ line: 7, done: true, ok: false, stuck, text: `${B('Sıralama yapılamadı.')} Çıktıda yalnızca ${out.length} düğüm var (< n = ${n}). ${B(stuck.join(', '))} düğümlerinin giriş derecesi hiçbir zaman 0 olamadı: ya bir döngünün içindeler ya da bir döngünün bitmesini bekliyorlar. Bu, grafın bir <b>döngü</b> içerdiği anlamına gelir ve topolojik sıra yoktur.` });
+  return steps;
+}
+
+function buildTopoDFS(g) {
+  const steps = [], n = g.nodes.length;
+  const st = {}; g.nodes.forEach((v) => (st[v] = 0));
+  const stack = [], fin = [], tree = []; let cyc = null;
+  const snap = (o) => steps.push(Object.assign({ state: Object.assign({}, st), stack: [...stack], fin: [...fin], tree: [...tree], back: cyc ? [cyc.key] : [], cycle: cyc ? cyc.path : null, look: null, cur: null }, o));
+  snap({ line: 0, text: `Düğümler alfabetik sırayla dolaşılır. Ziyaret edilmemiş her düğümden bir DFS başlatılır. Bir düğüm, ondan çıkan tüm yollar bittikten sonra <b>biter</b>; bitiş sırası bir listeye yazılır.` });
+  function dfs(u) {
+    st[u] = 1; stack.push(u);
+    snap({ line: 2, cur: u, text: `${B('DFS(' + u + ')')}: ${u} <b>aktif</b> olarak işaretlendi (şu an yolun üzerinde) ve yığına girdi. ${u}, ondan çıkan tüm yollar bitmeden bitmeyecek.` });
+    for (const v of g.out[u]) {
+      if (cyc) return;
+      const k = dkey(u, v);
+      snap({ line: 3, cur: u, look: k, text: `${B(u + ' → ' + v)} oku inceleniyor: ${v}, ${u}'ya bağımlı (${u} önce gelmeli).` });
+      if (st[v] === 0) {
+        snap({ line: 4, cur: u, look: k, text: `${B(v)} henüz ziyaret edilmedi → ${B('DFS(' + v + ')')} çağrılır. Önce ${v} ve ondan sonrakiler bitirilecek.` });
+        tree.push(k); dfs(v); if (cyc) return;
+      } else if (st[v] === 1) {
+        const path = stack.slice(stack.indexOf(v));
+        cyc = { key: k, path };
+        snap({ line: 5, cur: u, look: k, text: `${B(v)} şu an <b>aktif</b> (yığında): ${path.join(' → ')} → ${v} yolu başa dönüyor. ${u} → ${v} bir <b>geri kenar</b>, yani graf bir <b>döngü</b> içeriyor. Döngülü grafta topolojik sıra yoktur, algoritma durur.` });
+        return;
+      } else {
+        snap({ line: 4, cur: u, look: k, text: `${B(v)} zaten <b>bitti</b>: ${v} ve ondan çıkan her şey bitiş listesinde. Tekrar gezmeye gerek yok.` });
+      }
+    }
+    if (cyc) return;
+    st[u] = 2; stack.pop(); fin.push(u);
+    snap({ line: 6, cur: u, text: `${B(u)}'nun tüm çıkan okları işlendi → ${B(u + ' bitti')} (bitiş #${fin.length}). Bitiş listesi: ${fin.join(', ')}. Liste sonunda ters çevrilecek, bu yüzden oklarla bağlı olduğu düğümler ${u}'dan sonra gelecek.` });
+  }
+  for (const s of g.nodes) {
+    if (cyc) break;
+    snap({ line: 0, text: `Ana döngü: sıradaki düğüm ${B(s)}.` });
+    if (st[s] === 0) { snap({ line: 1, cur: s, text: `${B(s)} henüz ziyaret edilmedi → ${B('DFS(' + s + ')')} başlatılır.` }); dfs(s); }
+    else snap({ line: 1, text: `${B(s)} daha önce ziyaret edilip ${st[s] === 2 ? 'bitmiş' : 'işlenmiş'} → yeni DFS gerekmez.` });
+  }
+  if (cyc) snap({ line: -1, done: true, ok: false, text: `${B('Döngü bulundu:')} ${cyc.path.join(' → ')} → ${cyc.path[0]}. Topolojik sıralama yapılamaz.` });
+  else {
+    const order = fin.slice().reverse();
+    snap({ line: 7, done: true, ok: true, order, text: `${B('DFS tamamlandı.')} Bitiş listesi ${fin.join(' ')} ters çevrildi → topolojik sıra: ${B(order.join(' → '))}.` });
+  }
+  return steps;
+}
+
+// ---- rastgele DAG ----
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function randomDAG(n, density, rnd, withCycle) {
+  const names = 'ABCDEFGHIJ'.slice(0, n).split('');
+  const shuf = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  shuf(names);
+  const L = n <= 5 ? 3 : n <= 8 ? 4 : 5;
+  const idx = shuf([...Array(n).keys()]); const layer = new Array(n);
+  for (let k = 0; k < L; k++) layer[idx[k]] = k;
+  for (let k = L; k < n; k++) layer[idx[k]] = Math.floor(rnd() * L);
+  const pairs = [], have = new Set();
+  const add = (a, b) => { const k = a + '>' + b; if (a === b || have.has(k)) return false; have.add(k); pairs.push([a, b]); return true; };
+  for (let i = 0; i < n; i++) if (layer[i] > 0) {
+    const c = []; for (let j = 0; j < n; j++) if (layer[j] === layer[i] - 1) c.push(j);
+    add(names[c[Math.floor(rnd() * c.length)]], names[i]);
+  }
+  const extra = Math.round(n * (density === 'seyrek' ? 0.15 : density === 'yogun' ? 1.1 : 0.6));
+  for (let t = 0, added = 0; added < extra && t < 200; t++) {
+    const i = Math.floor(rnd() * n), j = Math.floor(rnd() * n);
+    if (layer[i] < layer[j] && add(names[i], names[j])) added++;
+  }
+  for (let i = 0; i < n; i++) if (layer[i] === 0 && !pairs.some((p) => p[0] === names[i])) {
+    const c = []; for (let j = 0; j < n; j++) if (layer[j] > 0) c.push(j);
+    add(names[i], names[c[Math.floor(rnd() * c.length)]]);
+  }
+  if (withCycle) {
+    const ins = {}, outs = {}; names.forEach((x) => { ins[x] = []; outs[x] = []; });
+    pairs.forEach(([a, b]) => { outs[a].push(b); ins[b].push(a); });
+    const mids = names.filter((x) => ins[x].length && outs[x].length);
+    if (mids.length) { const b = mids[Math.floor(rnd() * mids.length)]; const a = ins[b][Math.floor(rnd() * ins[b].length)], c = outs[b][Math.floor(rnd() * outs[b].length)]; add(c, a); }
+    else { const [x, y] = pairs[Math.floor(rnd() * pairs.length)]; add(y, x); }
+  }
+  return { names, pairs };
+}
+
+// ---- katmanlı yerleşim (döngülü graflarda geri kenarlar yok sayılır) ----
+function layerLayout(g, W = 640, H = 420) {
+  const M = 50, st = {}, back = new Set(), fin = [];
+  g.nodes.forEach((v) => (st[v] = 0));
+  (function run() { const d = (u) => { st[u] = 1; for (const v of g.out[u]) { if (st[v] === 0) d(v); else if (st[v] === 1) back.add(dkey(u, v)); } st[u] = 2; fin.push(u); }; g.nodes.forEach((s) => { if (st[s] === 0) d(s); }); })();
+  const fwdOut = {}, fwdIn = {}; g.nodes.forEach((v) => { fwdOut[v] = []; fwdIn[v] = []; });
+  g.edges.forEach(([a, b]) => { if (!back.has(dkey(a, b))) { fwdOut[a].push(b); fwdIn[b].push(a); } });
+  const level = {}; g.nodes.forEach((v) => (level[v] = 0));
+  fin.slice().reverse().forEach((u) => fwdOut[u].forEach((v) => { level[v] = Math.max(level[v], level[u] + 1); }));
+  const maxL = Math.max(0, ...Object.values(level));
+  const cols = Array.from({ length: maxL + 1 }, () => []);
+  g.nodes.forEach((v) => cols[level[v]].push(v));
+  const ix = {}; const reidx = () => cols.forEach((c) => c.forEach((v, i) => (ix[v] = i)));
+  reidx();
+  const bary = (v, nb, cur) => (nb[v].length ? nb[v].reduce((s, x) => s + ix[x], 0) / nb[v].length : cur);
+  for (let pass = 0; pass < 4; pass++) {
+    for (let k = 1; k <= maxL; k++) { cols[k].sort((a, b) => bary(a, fwdIn, ix[a]) - bary(b, fwdIn, ix[b])); reidx(); }
+    for (let k = maxL - 1; k >= 0; k--) { cols[k].sort((a, b) => bary(a, fwdOut, ix[a]) - bary(b, fwdOut, ix[b])); reidx(); }
+  }
+  const pos = {};
+  cols.forEach((c, k) => c.forEach((v, i) => { pos[v] = { x: maxL === 0 ? W / 2 : M + k * (W - 2 * M) / maxL, y: M + (i + 0.5) * (H - 2 * M) / c.length }; }));
+  return pos;
+}
+/*ENGINE-END*/
+
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const el = (name, attrs) => { const e = document.createElementNS(SVGNS, name); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); return e; };
+  const R = 24;
+  const toPos = (o) => { const p = {}; for (const k in o) p[k] = { x: o[k][0], y: o[k][1] }; return p; };
+  const Q4_POS = { A: [50, 130], B: [50, 330], C: [237, 75], D: [237, 280], E: [425, 75], F: [425, 380], G: [600, 230] };
+  const PRESETS = {
+    q4: { nodes: 'ABCDEFG', edges: 'A>C A>D B>D C>E D>E D>F E>G F>G', pos: Q4_POS },
+    q4c: { nodes: 'ABCDEFG', edges: 'A>C A>D B>D C>E D>E D>F E>G F>G G>A', pos: Q4_POS },
+  };
+
+  const CODE = {
+    kahn: [
+      [0, 'indeg[v] ← number of edges entering v, for every v', '// ön koşul sayısı'],
+      [0, 'Q ← all vertices with indeg = 0', '// hemen başlayabilenler'],
+      [0, 'while Q is not empty:', ''],
+      [1, 'u ← remove smallest from Q; output u', '// sıraya koy'],
+      [1, 'for each edge u → v:', ''],
+      [2, 'indeg[v] ← indeg[v] − 1', '// u → v kenarını sil'],
+      [2, 'if indeg[v] = 0: add v to Q', '// v hazır oldu'],
+      [0, 'if |output| < n: cycle! no topological order', '// kalan düğümler döngüde'],
+    ],
+    dfs: [
+      [0, 'for each vertex s in alphabetical order:', ''],
+      [1, 'if s is NEW: DFS(s)', ''],
+      [0, 'DFS(u): state[u] ← ACTIVE; push u on stack', '// u şu an yolun üzerinde'],
+      [1, 'for each edge u → v:', ''],
+      [2, 'if state[v] = NEW: DFS(v)', '// DONE ise atla'],
+      [2, 'else if state[v] = ACTIVE: cycle!', '// geri kenar'],
+      [1, 'state[u] ← DONE; pop u; finish.append(u)', '// u bitti'],
+      [0, 'order ← reverse(finish)', '// topolojik sıra'],
+    ],
+  };
+
+  const S = { algo: 'kahn', src: 'q4', g: null, steps: [], idx: 0, timer: null };
+  let refs = { edges: {}, nodes: {} };
+
+  function parseD(str) {
+    const out = []; const re = /([^\s,;>\-–—→]+)\s*(?:-+>|→|>)\s*([^\s,;>\-–—→]+)/g; let m;
+    while ((m = re.exec(str))) out.push([m[1].toUpperCase(), m[2].toUpperCase()]);
+    return out;
+  }
+
+  function graphFromSource() {
+    const src = S.src;
+    if (PRESETS[src]) { const P = PRESETS[src]; return makeDGraph(P.nodes.split(''), parseD(P.edges), toPos(P.pos)); }
+    if (src === 'random') {
+      const n = +$('#rn').value, seed = +$('#rs').value || 0, d = $('#rd').value, cyc = $('#rc').checked;
+      const r = mulberry32(seed * 7919 + n * 31);
+      const { names, pairs } = randomDAG(n, d, r, cyc);
+      const g = makeDGraph(names, pairs); g.pos = layerLayout(g); return g;
+    }
+    const pairs = parseD($('#ctext').value); const err = $('#cerr');
+    const names = [...new Set(pairs.flat())];
+    let msg = '';
+    if (!pairs.length) msg = 'En az bir ok yazın, örneğin A>B.';
+    else if (pairs.some((p) => p[0] === p[1])) msg = 'Kendine dönen ok (A>A) desteklenmiyor.';
+    else if (names.length > 10) msg = 'En çok 10 düğüm kullanabilirsiniz (şu an ' + names.length + ').';
+    else if (names.some((x) => x.length > 3)) msg = 'Düğüm adları en fazla 3 karakter olmalı.';
+    if (msg) { err.textContent = msg; err.hidden = false; return null; }
+    err.hidden = true;
+    const g = makeDGraph(names, pairs); g.pos = layerLayout(g); return g;
+  }
+
+  function loadGraph() {
+    const g = graphFromSource(); if (!g) return;
+    S.g = g;
+    $('#ginfo').textContent = `V = ${g.nodes.length} düğüm, E = ${g.edges.length} ok`;
+    buildSvg(); rebuildSteps();
+  }
+
+  function rebuildSteps() {
+    pause();
+    S.steps = S.algo === 'kahn' ? buildKahn(S.g) : buildTopoDFS(S.g);
+    S.idx = 0;
+    const sl = $('#slider'); sl.max = S.steps.length - 1; sl.value = 0;
+    render();
+  }
+
+  /* ---------- çizim ---------- */
+  function mk(id, cls) {
+    const m = el('marker', { id, markerWidth: 14, markerHeight: 14, refX: 12, refY: 6, orient: 'auto', markerUnits: 'userSpaceOnUse' });
+    m.append(el('path', { d: 'M0,0 L12,6 L0,12 z', class: cls })); return m;
+  }
+  function buildSvg() {
+    const svg = $('#svg'); svg.innerHTML = ''; refs = { edges: {}, nodes: {} };
+    const defs = el('defs');
+    defs.append(mk('arr-def', 'mk-def'), mk('arr-tree', 'mk-tree'), mk('arr-look', 'mk-look'), mk('arr-bad', 'mk-bad'));
+    const gE = el('g'), gN = el('g'), g = S.g, has = new Set(g.edges.map((e) => dkey(e[0], e[1])));
+    g.edges.forEach(([a, b]) => {
+      const A = g.pos[a], Bp = g.pos[b];
+      let dx = Bp.x - A.x, dy = Bp.y - A.y; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+      let ox = 0, oy = 0; if (has.has(dkey(b, a))) { ox = -dy * 7; oy = dx * 7; }
+      const line = el('line', { x1: A.x + dx * R + ox, y1: A.y + dy * R + oy, x2: Bp.x - dx * (R + 2) + ox, y2: Bp.y - dy * (R + 2) + oy, class: 'edge', 'marker-end': 'url(#arr-def)' });
+      gE.append(line); refs.edges[dkey(a, b)] = line;
+    });
+    g.nodes.forEach((n) => {
+      const p = g.pos[n]; const grp = el('g', { class: 'node', transform: `translate(${p.x},${p.y})` });
+      const c = el('circle', { class: 'c', r: R }); const t = el('text', { class: 't' }); t.textContent = n;
+      const badge = el('g', { class: 'badge', transform: `translate(${R - 2},${-R + 2})`, visibility: 'hidden' });
+      badge.append(el('circle', { r: 11 })); const bt = el('text', {}); badge.append(bt);
+      const sub = el('text', { class: 'sub', y: R + 17 });
+      grp.append(c, t, badge, sub); gN.append(grp); refs.nodes[n] = { grp, badge, bt, sub };
+    });
+    svg.append(defs, gE, gN);
+  }
+
+  function renderGraph(s) {
+    const kahn = S.algo === 'kahn';
+    const rem = new Set(s.removed || []), tree = new Set(s.tree || []), back = new Set(s.back || []);
+    for (const k in refs.edges) {
+      const c = ['edge']; let m = 'def';
+      if (k === s.look) { c.push('look'); m = 'look'; }
+      else if (back.has(k)) { c.push('back'); m = 'bad'; }
+      else if (tree.has(k)) { c.push('tree'); m = 'tree'; }
+      else if (rem.has(k)) c.push('removed');
+      refs.edges[k].setAttribute('class', c.join(' '));
+      refs.edges[k].setAttribute('marker-end', `url(#arr-${m})`);
+    }
+    const cyc = new Set(kahn ? (s.stuck || []) : (s.cycle || []));
+    S.g.nodes.forEach((n) => {
+      const r = refs.nodes[n]; const c = ['node']; let sub = '';
+      if (kahn) {
+        const oi = s.out.indexOf(n);
+        if (oi >= 0) { sub = '#' + (oi + 1); c.push(s.cur === n ? 'cur' : 'done'); c.push('gone'); }
+        else if (s.avail.includes(n)) c.push('open');
+        r.bt.textContent = s.indeg[n]; r.badge.setAttribute('visibility', 'visible');
+      } else {
+        const st = s.state[n], fi = s.fin.indexOf(n);
+        if (st === 2) { c.push('done'); sub = 'b' + (fi + 1); }
+        else if (st === 1) c.push(s.stack[s.stack.length - 1] === n ? 'cur' : 'open');
+        r.badge.setAttribute('visibility', 'hidden');
+      }
+      if (cyc.has(n)) c.push('bad');
+      r.grp.setAttribute('class', c.join(' ')); r.sub.textContent = sub;
+    });
+  }
+
+  function buildLegend() {
+    $('#legend').innerHTML = S.algo === 'kahn'
+      ? `<span><i class="sw"></i>bekliyor (in-degree &gt; 0)</span><span><i class="sw open"></i>hazır (Q'da)</span><span><i class="sw cur"></i>şimdi seçilen</span><span><i class="sw done"></i>sıraya alındı</span><span><i class="ln skip"></i>silinen ok</span><span>üst sağ rozet = in-degree, #k = sıra</span>`
+      : `<span><i class="sw"></i>yeni</span><span><i class="sw open"></i>aktif (yolda)</span><span><i class="sw cur"></i>şu an işlenen</span><span><i class="sw done"></i>bitti</span><span><i class="ln"></i>DFS ağacı oku</span><span>bk = k. biten düğüm</span>`;
+  }
+
+  function buildCode() {
+    const L = CODE[S.algo];
+    $('#code').innerHTML = L.map((l, i) => `<div class="cl" data-i="${i}"><span class="n">${i + 1}</span><span class="tx" style="padding-left:${l[0] * 18}px">${l[1]}${l[2] ? '  <span class="cm">' + l[2] + '</span>' : ''}</span></div>`).join('');
+    $('#codetitle').textContent = 'Sözde kod – ' + (S.algo === 'kahn' ? 'Kahn' : 'DFS ile topolojik sıralama');
+  }
+
+  const chips = (arr, cls) => arr.length ? arr.map((x) => `<span class="ch ${cls || ''}">${x}</span>`).join('') : '<span class="empty">boş</span>';
+
+  /* doğrusal yerleşim: düğümler tek sırada, oklar yaylarla */
+  function strip(order, edges) {
+    const n = order.length; if (!n) return '<span class="empty">henüz sıraya alınan düğüm yok</span>';
+    const gap = Math.min(66, 560 / Math.max(n - 1, 1)), pad = 30, Rn = 17, W = pad * 2 + gap * (n - 1);
+    const pos = {}; order.forEach((v, i) => (pos[v] = pad + i * gap));
+    const es = edges.filter(([a, b]) => pos[a] !== undefined && pos[b] !== undefined);
+    const peaks = es.map(([a, b]) => 12 + Math.abs(pos[b] - pos[a]) / gap * 13);
+    const H = Math.max(0, ...peaks) + Rn * 2 + 26, y0 = H - Rn - 8, top = y0 - Rn;
+    let s = `<svg class="strip" viewBox="0 0 ${W} ${H}" style="max-width:${Math.round(W * 1.25)}px" role="img" aria-label="Doğrusal sıra: ${order.join(', ')}"><defs><marker id="sa" markerWidth="12" markerHeight="12" refX="10" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 z" class="mk"/></marker></defs>`;
+    es.forEach(([a, b], i) => { const x1 = pos[a], x2 = pos[b]; s += `<path class="sa" d="M${x1},${top} Q${(x1 + x2) / 2},${top - 2 * peaks[i]} ${x2},${top - 1}" marker-end="url(#sa)"/>`; });
+    order.forEach((v) => { s += `<circle class="sn" cx="${pos[v]}" cy="${y0}" r="${Rn}"/><text class="st" x="${pos[v]}" y="${y0}">${v}</text>`; });
+    return s + '</svg>';
+  }
+
+  function renderPanels(s) {
+    const g = S.g;
+    if (S.algo === 'kahn') {
+      $('#dstitle').textContent = 'Giriş dereceleri, kuyruk ve çıktı';
+      $('#dshint').textContent = 'in-degree: düğüme gelen ok sayısı (önce bitmesi gereken iş sayısı). 0 olan düğüm kuyruğa girer; kuyruktan çıkan düğümün okları silinir.';
+      const ind = g.nodes.map((n) => { const done = s.out.includes(n); const cls = done ? 'd gone' : (s.indeg[n] === 0 ? 'd zero' : 'd'); return `<span class="ch ${cls}">${n}: ${s.indeg[n]}</span>`; }).join('');
+      $('#ds').innerHTML = `<div class="sec" style="margin-top:0"><h3>indeg[ ]</h3><div class="chipset">${ind}</div></div>
+        <div class="sec"><h3>Q (hazır düğümler)</h3><div class="chipset">${chips(s.avail, 'act')}</div></div>
+        <div class="sec"><h3>Çıktı (topolojik sıra)</h3><div class="chipset">${s.out.length ? s.out.map((x, i) => `<span class="ch dn">${i + 1}. ${x}</span>`).join('') : '<span class="empty">henüz yok</span>'}</div></div>`;
+      $('#s2hint').textContent = 'Sıraya alınan düğümler soldan sağa dizilir. Tüm oklar soldan sağa gidiyorsa sıra geçerlidir.';
+      $('#s2').innerHTML = strip(s.out, g.edges);
+    } else {
+      $('#dstitle').textContent = 'Çağrı yığını, durumlar ve bitiş listesi';
+      $('#dshint').textContent = 'Yığındaki düğümler "aktif"tir. Aktif bir düğüme geri dönen ok döngü demektir. Düğüm bitince bitiş listesine yazılır, liste sonunda ters çevrilir.';
+      const stack = s.stack.length
+        ? `<div class="stack" aria-label="yığın">${s.stack.map((x, i) => `<div class="cell ${i === s.stack.length - 1 ? 'top' : ''}">${x}</div>`).join('')}</div><div class="tag">alt = ilk eklenen · üst = tepe (top)</div>`
+        : '<div class="stack"><span class="empty">yığın boş</span></div>';
+      const lab = ['yeni', 'aktif', 'bitti'], cl = ['d', 'd act', 'd dn'];
+      const sts = g.nodes.map((n) => `<span class="ch ${cl[s.state[n]]} ${s.cycle && s.cycle.includes(n) ? 'cyc' : ''}">${n}: ${lab[s.state[n]]}</span>`).join('');
+      const fin = s.fin.length ? s.fin.map((x, i) => `<span class="ch dn">b${i + 1}: ${x}</span>`).join('') : '<span class="empty">henüz yok</span>';
+      let rev = '';
+      if (s.done && s.ok) rev = `<div class="sec"><h3>Ters çevrilmiş (topolojik sıra)</h3><div class="chipset">${s.order.map((x, i) => `<span class="ch dn">${i + 1}. ${x}</span>`).join('')}</div></div>`;
+      $('#ds').innerHTML = `${stack}<div class="sec"><h3>Düğüm durumları</h3><div class="chipset">${sts}</div></div><div class="sec"><h3>Bitiş listesi (finish)</h3><div class="chipset">${fin}</div></div>${rev}`;
+      $('#s2hint').textContent = 'DFS bitince bitiş listesinin tersi soldan sağa dizilir. Tüm oklar soldan sağa gidiyorsa sıra geçerlidir.';
+      $('#s2').innerHTML = s.done && s.ok ? strip(s.order, g.edges) : (s.done ? '<span class="empty">döngü olduğu için doğrusal sıra çizilemez</span>' : '<span class="empty">DFS bitince çizilecek</span>');
+    }
+  }
+
+  function renderSummary(s) {
+    const sum = $('#sum');
+    if (!s.done) { sum.hidden = true; return; }
+    const g = S.g; let h = '';
+    const okOrder = S.algo === 'kahn' ? (s.ok ? s.out : null) : (s.ok ? s.order : null);
+    if (okOrder) {
+      const pos = {}; okOrder.forEach((v, i) => (pos[v] = i));
+      h += `<div><span class="k">Topolojik sıra</span><b>${okOrder.join(' → ')}</b></div>`;
+      h += `<div><span class="k">Kontrol: her X → Y okunda X, Y'den önce mi?</span><div class="checks">${g.edges.map(([a, b]) => `<span>${a}→${b}</span>`).join('')}</div></div>`;
+      const o = S.algo === 'kahn' ? buildTopoDFS(g) : buildKahn(g); const ol = o[o.length - 1];
+      const other = S.algo === 'kahn' ? ol.order : ol.out;
+      if (other && other.length) h += `<div><span class="k">${S.algo === 'kahn' ? 'DFS yöntemi' : 'Kahn yöntemi'} bu grafta</span>${other.join(' → ')}${other.join() === okOrder.join() ? ' (aynı sıra).' : ' (farklı ama o da geçerli: bir DAG\'ın birden çok topolojik sırası olabilir).'}</div>`;
+    } else {
+      h += `<div class="sumerr">Bu grafta topolojik sıralama yok: graf bir döngü içeriyor.</div>`;
+      if (S.algo === 'kahn') h += `<div><span class="k">Sıraya alınamayan düğümler</span>${s.stuck.join(', ')} (giriş dereceleri hiçbir zaman 0 olmadı)</div>`;
+      else h += `<div><span class="k">Bulunan döngü</span>${s.cycle.join(' → ')} → ${s.cycle[0]}</div>`;
+    }
+    h += `<div><span class="k">Zaman karmaşıklığı</span>O(V + E): her düğüm ve her ok bir kez işlenir.</div>`;
+    sum.innerHTML = h; sum.hidden = false;
+  }
+
+  function render() {
+    const s = S.steps[S.idx], n = S.steps.length, N = S.g.nodes.length;
+    renderGraph(s); renderPanels(s); renderSummary(s);
+    document.querySelectorAll('#code .cl').forEach((d) => d.classList.toggle('on', +d.dataset.i === s.line));
+    $('#explain').innerHTML = s.text;
+    $('#c-step').textContent = `Adım ${S.idx + 1} / ${n}`;
+    $('#c-line').textContent = s.line >= 0 ? `Satır ${s.line + 1}` : 'Bitti';
+    $('#c-prog').textContent = S.algo === 'kahn' ? `Çıktı: ${s.out.length} / ${N}` : `Biten: ${s.fin.length} / ${N}`;
+    $('#stepout').textContent = `${S.idx + 1} / ${n}`;
+    $('#slider').value = S.idx;
+    $('#first').disabled = $('#prev').disabled = S.idx === 0;
+    $('#next').disabled = $('#last').disabled = S.idx === n - 1;
+    $('#play').textContent = S.timer ? 'Duraklat' : (S.idx === n - 1 ? 'Baştan oynat' : 'Oynat');
+  }
+
+  function go(i) { S.idx = Math.max(0, Math.min(S.steps.length - 1, i)); if (S.idx === S.steps.length - 1) pause(); render(); }
+  function pause() { if (S.timer) { clearInterval(S.timer); S.timer = null; } }
+  function play() {
+    if (S.timer) { pause(); render(); return; }
+    if (S.idx === S.steps.length - 1) S.idx = 0;
+    S.timer = setInterval(() => { if (S.idx >= S.steps.length - 1) { pause(); render(); } else go(S.idx + 1); }, +$('#speed').value);
+    render();
+  }
+
+  function setAlgo(a) {
+    S.algo = a;
+    $('#b-kahn').setAttribute('aria-pressed', a === 'kahn');
+    $('#b-dfs').setAttribute('aria-pressed', a === 'dfs');
+    buildLegend(); buildCode(); rebuildSteps();
+  }
+
+  $('#b-kahn').onclick = () => setAlgo('kahn');
+  $('#b-dfs').onclick = () => setAlgo('dfs');
+  $('#src').onchange = (e) => {
+    S.src = e.target.value;
+    $('#randrow').hidden = S.src !== 'random';
+    $('#customrow').hidden = S.src !== 'custom';
+    loadGraph();
+  };
+  $('#rn').oninput = (e) => { $('#rnout').textContent = e.target.value; loadGraph(); };
+  $('#rd').onchange = loadGraph; $('#rs').onchange = loadGraph; $('#rc').onchange = loadGraph;
+  $('#rnew').onclick = () => { $('#rs').value = Math.floor(Math.random() * 100000); loadGraph(); };
+  $('#capply').onclick = loadGraph;
+  $('#first').onclick = () => { pause(); go(0); };
+  $('#prev').onclick = () => { pause(); go(S.idx - 1); };
+  $('#next').onclick = () => { pause(); go(S.idx + 1); };
+  $('#last').onclick = () => { pause(); go(S.steps.length - 1); };
+  $('#play').onclick = play;
+  $('#slider').oninput = (e) => { pause(); go(+e.target.value); };
+  $('#speed').onchange = () => { if (S.timer) { pause(); play(); } };
+  document.addEventListener('keydown', (e) => {
+    const t = e.target.tagName;
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+    if (t === 'BUTTON' && e.key === ' ') return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); pause(); go(S.idx + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); pause(); go(S.idx - 1); }
+    else if (e.key === ' ') { e.preventDefault(); play(); }
+  });
+
+  buildLegend(); buildCode(); loadGraph();
+})();
+</script>
+
+</body></html>

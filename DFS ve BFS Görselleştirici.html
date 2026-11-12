@@ -1,0 +1,691 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>DFS ve BFS Görselleştirici</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: sol sütun = kontroller, graf, açıklama; sağ sütun = sözde kod, yığın/kuyruk, komşuluk listesi. Graf kartı kareli defter kâğıdı gibi. */
+:root{
+  --bg:#f2f5fa; --surface:#ffffff; --ink:#172033; --muted:#566178; --line:#d8dfec; --grid:#e8edf6;
+  --accent:#2b52c8; --accent-ink:#ffffff; --accent-soft:#e4ebfc;
+  --open:#c8690a; --open-soft:#fdebd2; --done:#1c8453; --done-soft:#d8f0e3;
+  --edge:#8e9ab3; --code-bg:#eff3fa; --code-on:#dce6ff;
+  --font-head:"Space Grotesk","Segoe UI",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1320; --surface:#161d2d; --ink:#e7ecf8; --muted:#9ba7c0; --line:#2a3550; --grid:#1c2438;
+    --accent:#7ea0ff; --accent-ink:#0e1320; --accent-soft:#223157;
+    --open:#f2a24a; --open-soft:#3b2a13; --done:#52c88f; --done-soft:#143a2a;
+    --edge:#59668a; --code-bg:#111828; --code-on:#25345f; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1320; --surface:#161d2d; --ink:#e7ecf8; --muted:#9ba7c0; --line:#2a3550; --grid:#1c2438;
+  --accent:#7ea0ff; --accent-ink:#0e1320; --accent-soft:#223157;
+  --open:#f2a24a; --open-soft:#3b2a13; --done:#52c88f; --done-soft:#143a2a;
+  --edge:#59668a; --code-bg:#111828; --code-on:#25345f; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--font-head);font-size:clamp(1.5rem,4vw,2rem);line-height:1.15;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.card h2{font-family:var(--font-head);font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:500}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+/* kontroller */
+.controls{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.lbl{font-size:.78rem;color:var(--muted);font-weight:500}
+select,input[type=number],textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:36px;max-width:100%}
+textarea{font-family:var(--font-mono);font-size:.85rem;width:100%;resize:vertical}
+input[type=range]{accent-color:var(--accent);width:100%}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-weight:600;border:0;background:var(--surface);color:var(--ink);padding:8px 18px;cursor:pointer;min-height:38px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer;min-height:38px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600;min-width:104px}
+.btn:disabled{opacity:.45;cursor:default}
+:is(button,select,input,textarea):focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.note{font-size:.82rem;color:var(--muted);margin:0}
+.err{color:var(--open);font-size:.85rem;margin:4px 0 0}
+
+/* graf */
+.graphcard{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;background-color:var(--surface)}
+#svg{display:block;width:100%;height:auto;max-height:480px}
+.edge{stroke:var(--edge);stroke-width:2.2;transition:stroke .25s,stroke-width .25s}
+.edge.skip{stroke-dasharray:7 6;opacity:.75}
+.edge.tree{stroke:var(--done);stroke-width:5.5;stroke-dasharray:none;opacity:1}
+.edge.look{stroke:var(--open);stroke-width:5.5;stroke-dasharray:none;opacity:1}
+.node circle.c{fill:var(--surface);stroke:var(--edge);stroke-width:2.5;transition:fill .25s,stroke .25s}
+.node text.t{fill:var(--ink);font:600 18px var(--font-head);text-anchor:middle;dominant-baseline:central;transition:fill .25s}
+.node.open circle.c{fill:var(--open-soft);stroke:var(--open)}
+.node.done circle.c{fill:var(--done-soft);stroke:var(--done)}
+.node.cur circle.c{fill:var(--accent);stroke:var(--accent)}
+.node.cur text.t{fill:var(--accent-ink)}
+.node.ring circle.c{stroke:var(--accent);stroke-width:5}
+.node .badge circle{fill:var(--ink)}
+.node .badge text{fill:var(--bg);font:600 12px var(--font-mono);text-anchor:middle;dominant-baseline:central}
+.node .dist{fill:var(--muted);font:500 13px var(--font-mono);text-anchor:middle}
+.ginfo{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between;font-size:.82rem;color:var(--muted);margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:50%;border:2.5px solid var(--edge);background:var(--surface);display:inline-block}
+.sw.open{background:var(--open-soft);border-color:var(--open)}
+.sw.done{background:var(--done-soft);border-color:var(--done)}
+.sw.cur{background:var(--accent);border-color:var(--accent)}
+.ln{width:20px;height:0;border-top:5px solid var(--done);display:inline-block}
+.ln.look{border-color:var(--open)}
+.ln.skip{border-top:2px dashed var(--edge)}
+
+/* oynatma */
+.play{display:flex;flex-direction:column;gap:10px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stepline{display:flex;gap:10px;align-items:center}
+.stepline output{font-family:var(--font-mono);font-size:.82rem;color:var(--muted);white-space:nowrap}
+
+/* açıklama */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chip{font-family:var(--font-mono);font-size:.76rem;background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:2px 10px}
+#explain{margin:0;min-height:5.2em;font-size:1rem}
+#explain b{font-family:var(--font-head);font-weight:700}
+.sum{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.sum .k{color:var(--muted);font-size:.78rem;font-weight:500;display:block}
+
+/* sözde kod */
+.code{font-family:var(--font-mono);font-size:.86rem;background:var(--code-bg);border-radius:8px;padding:6px 0;overflow-x:auto}
+.cl{display:flex;gap:10px;padding:5px 12px;border-left:4px solid transparent;transition:background .2s}
+.cl .tx{white-space:pre-wrap;min-width:0}
+.cl .n{color:var(--muted);width:1.4em;text-align:right;flex:none;user-select:none}
+.cl .cm{color:var(--muted)}
+.cl.on{background:var(--code-on);border-left-color:var(--accent)}
+.cl.on .tx{font-weight:500}
+
+/* yığın / kuyruk / çıktı */
+.ds-hint{font-size:.82rem;color:var(--muted);margin:0 0 8px}
+.stack{display:flex;flex-direction:column-reverse;gap:4px;align-items:stretch;max-width:150px;min-height:44px;border:2px solid var(--line);border-top:0;border-radius:0 0 8px 8px;padding:6px}
+.queue{display:flex;gap:4px;flex-wrap:wrap;align-items:center;min-height:50px;border-block:2px solid var(--line);padding:6px 0}
+.cell{font:600 15px var(--font-head);text-align:center;min-width:38px;padding:5px 8px;border-radius:6px;background:var(--open-soft);border:1.5px solid var(--open);position:relative}
+.cell.top{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.cell.front{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tag{font-size:.7rem;font-family:var(--font-mono);color:var(--muted);margin-inline:6px}
+.empty{color:var(--muted);font-size:.85rem;font-style:italic;padding:2px 4px}
+.sec{margin-top:14px}
+.sec h3{font-size:.78rem;font-weight:500;color:var(--muted);margin:0 0 6px}
+.chipset{display:flex;flex-wrap:wrap;gap:6px}
+.ch{font:600 14px var(--font-head);background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:3px 9px;min-width:34px;text-align:center}
+.ch.d{font-family:var(--font-mono);font-weight:500}
+.ch.new{background:var(--accent-soft);border-color:var(--accent)}
+
+/* komşuluk listesi */
+.adj{display:flex;flex-direction:column;gap:4px}
+.ar{display:flex;gap:10px;align-items:center;padding:3px 6px;border-radius:6px;border-left:4px solid transparent}
+.ar.cur{background:var(--code-on);border-left-color:var(--accent)}
+.ar .v{font:700 15px var(--font-head);width:1.6em}
+.ar .ar-arrow{color:var(--muted);font-family:var(--font-mono)}
+.ar .nb{display:flex;gap:4px;flex-wrap:wrap}
+.nb span{font:500 14px var(--font-mono);padding:1px 8px;border-radius:5px;border:1px solid var(--line)}
+.nb span.look{background:var(--open-soft);border-color:var(--open);font-weight:600}
+.randrow[hidden],.customrow[hidden],.sum[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>DFS ve BFS Görselleştirici</h1>
+    <p class="sub">BIL231 Algoritmalar, Ders 7 – Soru 2. Algoritmayı sözde kod üzerinde ve graf üzerinde adım adım izleyin.</p>
+  </header>
+
+  <section class="card controls" aria-label="Ayarlar">
+    <div class="row">
+      <div class="field">
+        <span class="lbl" id="algolbl">Algoritma</span>
+        <div class="seg" role="group" aria-labelledby="algolbl">
+          <button type="button" id="b-dfs" aria-pressed="true">DFS</button>
+          <button type="button" id="b-bfs" aria-pressed="false">BFS</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="src">Graf</label>
+        <select id="src">
+          <option value="dfs">Soru 2(a) – DFS grafı</option>
+          <option value="bfs">Soru 2(b) – BFS grafı</option>
+          <option value="lec">Ders slaytındaki graf (A–G)</option>
+          <option value="random">Rastgele graf üret</option>
+          <option value="custom">Kendi grafımı gireyim</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="start">Başlangıç düğümü</label>
+        <select id="start"></select>
+      </div>
+    </div>
+    <div class="row randrow" id="randrow" hidden>
+      <div class="field">
+        <label for="rn">Düğüm sayısı: <output id="rnout">8</output></label>
+        <input type="range" id="rn" min="4" max="12" value="8">
+      </div>
+      <div class="field">
+        <label for="rd">Kenar yoğunluğu</label>
+        <select id="rd"><option value="seyrek">Seyrek</option><option value="orta" selected>Orta</option><option value="yogun">Yoğun</option></select>
+      </div>
+      <div class="field">
+        <label for="rs">Seed (aynı seed, aynı graf)</label>
+        <input type="number" id="rs" min="0" max="99999" value="7" style="width:110px">
+      </div>
+      <button type="button" class="btn primary" id="rnew">Yeni rastgele graf</button>
+    </div>
+    <div class="customrow" id="customrow" hidden>
+      <div class="field">
+        <label for="ctext">Kenarları yazın (örnek: A-B, A-C, B-D). En çok 12 düğüm, düğüm adı en fazla 3 karakter.</label>
+        <textarea id="ctext" rows="3">A-B, A-C, B-D, C-D, D-E, E-F, C-F</textarea>
+      </div>
+      <div class="btns" style="margin-top:8px"><button type="button" class="btn primary" id="capply">Grafı uygula</button></div>
+      <p class="err" id="cerr" role="alert" hidden></p>
+    </div>
+    <p class="note">Her düğümün komşuları alfabetik sırayla gezilir. Klavye: ← geri, → ileri, boşluk oynat/duraklat.</p>
+  </section>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card graphcard" aria-label="Graf">
+        <svg id="svg" viewBox="0 0 640 420" role="img" aria-label="Graf görseli"></svg>
+        <div class="ginfo"><span id="ginfo"></span><div class="legend" id="legend"></div></div>
+      </section>
+
+      <section class="card play" aria-label="Oynatma">
+        <div class="btns">
+          <button type="button" class="btn" id="first">Başa</button>
+          <button type="button" class="btn" id="prev">‹ Geri</button>
+          <button type="button" class="btn primary" id="play">Oynat</button>
+          <button type="button" class="btn" id="next">İleri ›</button>
+          <button type="button" class="btn" id="last">Sona</button>
+          <div class="field" style="margin-left:auto">
+            <label for="speed">Hız</label>
+            <select id="speed"><option value="1800">Yavaş</option><option value="1100" selected>Normal</option><option value="550">Hızlı</option><option value="250">Çok hızlı</option></select>
+          </div>
+        </div>
+        <div class="stepline">
+          <input type="range" id="slider" min="0" max="0" value="0" aria-label="Adım">
+          <output id="stepout" for="slider">0 / 0</output>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Bu adımda ne oluyor">
+        <h2>Bu adımda ne oluyor?</h2>
+        <div class="chips"><span class="chip" id="c-step"></span><span class="chip" id="c-line"></span></div>
+        <p id="explain" aria-live="polite"></p>
+        <div class="sum" id="sum" hidden></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card" aria-label="Sözde kod">
+        <h2 id="codetitle">Sözde kod</h2>
+        <div class="code" id="code"></div>
+      </section>
+      <section class="card" aria-label="Veri yapısı">
+        <h2 id="dstitle">Çağrı yığını</h2>
+        <p class="ds-hint" id="dshint"></p>
+        <div id="ds"></div>
+        <div class="sec"><h3 id="ordtitle">Ziyaret sırası</h3><div class="chipset" id="order"></div></div>
+        <div class="sec" id="distsec" hidden><h3>Uzaklık dist[ ] (başlangıçtan kenar sayısı)</h3><div class="chipset" id="dist"></div></div>
+      </section>
+      <section class="card" aria-label="Komşuluk listesi">
+        <h2>Komşuluk listesi</h2>
+        <div class="adj" id="adj"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+/*ENGINE-START*/
+const cmp = (a, b) => a.localeCompare(b, 'tr', { numeric: true });
+const ekey = (a, b) => (cmp(a, b) <= 0 ? a + '|' + b : b + '|' + a);
+const B = (t) => '<b>' + t + '</b>';
+
+function makeGraph(nodes, pairs, pos) {
+  const set = new Set(); const edges = [];
+  pairs.forEach(([a, b]) => {
+    if (a === b) return;
+    const k = ekey(a, b); if (set.has(k)) return; set.add(k);
+    edges.push(cmp(a, b) <= 0 ? [a, b] : [b, a]);
+  });
+  nodes = [...nodes].sort(cmp);
+  const adj = {}; nodes.forEach((n) => (adj[n] = []));
+  edges.forEach(([a, b]) => { adj[a].push(b); adj[b].push(a); });
+  nodes.forEach((n) => adj[n].sort(cmp));
+  return { nodes, edges, adj, pos };
+}
+
+function buildDFS(g, start) {
+  const steps = [];
+  const seen = new Set(), finished = new Set(), ds = [], order = [], tree = [], skipped = new Set();
+  const snap = (o) => steps.push(Object.assign({
+    seen: [...seen], finished: [...finished], ds: [...ds], order: [...order],
+    tree: [...tree], skipped: [...skipped], look: null, cur: null,
+  }, o));
+  snap({ line: 6, text: `Ana çağrı: ${B('DFS(' + start + ')')}. Henüz hiçbir düğüm ziyaret edilmedi, yığın (stack) boş.` });
+  function dfs(u, parent) {
+    seen.add(u); ds.push(u); order.push(u);
+    if (parent !== null) tree.push(ekey(parent, u));
+    const dead = g.adj[u].every((v) => seen.has(v));
+    let t = `${B(u)} ziyaret edildi (visited), çıktıya yazıldı ve çağrı yığınına eklendi (push).`;
+    if (parent !== null) t += ` ${parent}–${u} kenarı DFS ağacına girdi.`;
+    if (dead) t += ` ${B(u)}'nun ziyaret edilmemiş komşusu yok: bir <b>çıkmaz sokak</b>.`;
+    snap({ line: 1, cur: u, text: t });
+    for (const v of g.adj[u]) {
+      snap({ line: 2, cur: u, look: [u, v], text: `${B(u)}'nun komşu listesinde sıradaki düğüm: ${B(v)}. ${u}–${v} kenarı inceleniyor.` });
+      if (!seen.has(v)) {
+        snap({ line: 3, cur: u, look: [u, v], text: `${B(v)} henüz ziyaret edilmedi (visited[${v}] = false) → koşul doğru.` });
+        snap({ line: 4, cur: u, look: [u, v], text: `${B('DFS(' + v + ')')} çağrılır: ${v}'ye inilir, yeni bir özyinelemeli çağrı açılır. Geri dönmeden önce olabildiğince derine gidilecek.` });
+        dfs(v, u);
+      } else {
+        const k = ekey(u, v);
+        if (!tree.includes(k)) skipped.add(k);
+        const why = v === parent
+          ? `${B(v)} zaten ziyaret edilmiş (bu düğüme onun üzerinden geldik) → koşul yanlış, atlanır.`
+          : `${B(v)} zaten ziyaret edilmiş → koşul yanlış, atlanır. ${u}–${v} kenarı ağaca girmez (ağaç dışı kenar); aynı düğümü ikinci kez ziyaret etmemek için visited[] gerekir.`;
+        snap({ line: 3, cur: u, look: [u, v], text: why });
+      }
+    }
+    ds.pop(); finished.add(u);
+    snap({
+      line: 5, cur: u,
+      text: parent !== null
+        ? `${B(u)}'nun tüm komşuları işlendi → <b>return</b>: ${u} yığından çıkar (pop) ve ${B(parent)}'ye geri dönülür (backtrack).`
+        : `${B(u)} (başlangıç düğümü) için tüm komşular işlendi → <b>return</b>: yığın boşaldı, DFS sona erer.`,
+    });
+  }
+  dfs(start, null);
+  const un = g.nodes.filter((n) => !seen.has(n));
+  snap({ line: -1, done: true, text: `${B('DFS tamamlandı.')} ${seen.size} düğüm ziyaret edildi.` + (un.length ? ` Başlangıçtan ulaşılamayan düğümler: ${un.join(', ')}.` : '') });
+  return steps;
+}
+
+function buildBFS(g, start) {
+  const steps = [];
+  const seen = new Set(), finished = new Set(), ds = [], order = [], tree = [], skipped = new Set(), dist = {};
+  const snap = (o) => steps.push(Object.assign({
+    seen: [...seen], finished: [...finished], ds: [...ds], order: [...order],
+    tree: [...tree], skipped: [...skipped], dist: Object.assign({}, dist), look: null, cur: null,
+  }, o));
+  snap({ line: 0, text: `${B('BFS(' + start + ')')} çağrılır. Henüz hiçbir düğüm işaretlenmedi (marked), kuyruk (queue) boş.` });
+  seen.add(start); dist[start] = 0; ds.push(start);
+  snap({ line: 1, text: `Başlangıç düğümü ${B(start)} işaretlenir, dist[${start}] = 0 yapılır ve kuyruğa eklenir. Düğümler keşfedildikleri sırayla işlenecek, bu yüzden kuyruk (FIFO) kullanılır.` });
+  let prev = null;
+  for (;;) {
+    if (prev !== null) finished.add(prev);
+    if (ds.length === 0) {
+      snap({ line: 2, text: `${prev !== null ? B(prev) + "'nun komşuları bitti. " : ''}Kuyruk boş → <b>while</b> döngüsü sona erer.` });
+      break;
+    }
+    snap({ line: 2, text: `${prev !== null ? B(prev) + "'nun komşuları bitti. " : ''}Kuyruk boş değil (${ds.length} düğüm bekliyor) → döngü sürer.` });
+    const u = ds.shift(); order.push(u);
+    snap({ line: 3, cur: u, text: `Kuyruğun önündeki ${B(u)} çıkarılır (dequeue) ve çıktıya yazılır. En eski keşfedilen düğüm önce işlenir; bu yüzden düğümler başlangıca yakınlık sırasıyla (seviye seviye) işlenir.` });
+    for (const v of g.adj[u]) {
+      snap({ line: 4, cur: u, look: [u, v], text: `${B(u)}'nun komşu listesinde sıradaki düğüm: ${B(v)}. ${u}–${v} kenarı inceleniyor.` });
+      if (!seen.has(v)) {
+        snap({ line: 5, cur: u, look: [u, v], text: `${B(v)} henüz işaretlenmemiş → yeni bir düğüm keşfedildi.` });
+        seen.add(v); dist[v] = dist[u] + 1; ds.push(v); tree.push(ekey(u, v));
+        snap({ line: 6, cur: u, look: [u, v], text: `${B(v)} işaretlenir, dist[${v}] = dist[${u}] + 1 = ${dist[v]} yapılır ve kuyruğun arkasına eklenir. ${u}–${v} kenarı BFS ağacına girdi.` });
+      } else {
+        const k = ekey(u, v);
+        if (!tree.includes(k)) skipped.add(k);
+        snap({ line: 5, cur: u, look: [u, v], text: `${B(v)} zaten işaretli (kuyrukta bekliyor ya da işlendi) → atlanır. ${u}–${v} kenarı ağaca girmez.` });
+      }
+    }
+    prev = u;
+  }
+  const un = g.nodes.filter((n) => !seen.has(n));
+  snap({ line: -1, done: true, text: `${B('BFS tamamlandı.')} ${seen.size} düğüm işlendi. dist[] değerleri, başlangıçtan her düğüme en az kaç kenarla gidilebildiğini gösterir.` + (un.length ? ` Başlangıçtan ulaşılamayan düğümler: ${un.join(', ')}.` : '') });
+  return steps;
+}
+
+// ---- random graphs ----
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const LET = 'ABCDEFGHIJKL';
+function randomPairs(n, density, rnd) {
+  const names = LET.slice(0, n).split('');
+  const pairs = []; const have = new Set();
+  const add = (a, b) => { const k = ekey(a, b); if (have.has(k) || a === b) return false; have.add(k); pairs.push([a, b]); return true; };
+  for (let i = 1; i < n; i++) add(names[i], names[Math.floor(rnd() * i)]);
+  const maxE = n * (n - 1) / 2;
+  const target = Math.min(maxE, Math.round(density === 'seyrek' ? n - 1 + n * 0.25 : density === 'yogun' ? n * 1.8 : n * 1.3));
+  let guard = 0;
+  while (pairs.length < target && guard++ < 500) add(names[Math.floor(rnd() * n)], names[Math.floor(rnd() * n)]);
+  return { names, pairs };
+}
+function crossings(p, edges) {
+  let c = 0;
+  const ccw = (a, b, d) => (d.y - a.y) * (b.x - a.x) > (b.y - a.y) * (d.x - a.x);
+  for (let i = 0; i < edges.length; i++) for (let j = i + 1; j < edges.length; j++) {
+    const [a, b] = edges[i], [d, e] = edges[j];
+    if (a === d || a === e || b === d || b === e) continue;
+    if (ccw(p[a], p[d], p[e]) !== ccw(p[b], p[d], p[e]) && ccw(p[a], p[b], p[d]) !== ccw(p[a], p[b], p[e])) c++;
+  }
+  return c;
+}
+function forceLayout(nodes, edges, rnd, W = 640, H = 420) {
+  const n = nodes.length, M = 48; let best = null, bestC = 1e9;
+  for (let t = 0; t < 16; t++) {
+    const p = nodes.map((_, i) => { const a = 2 * Math.PI * i / n + rnd() * 0.6; return { x: W / 2 + Math.cos(a) * 130 * (0.5 + rnd()), y: H / 2 + Math.sin(a) * 100 * (0.5 + rnd()) }; });
+    const k = Math.sqrt((W - 2 * M) * (H - 2 * M) / n) * 0.9; let temp = W / 6;
+    const idx = {}; nodes.forEach((v, i) => (idx[v] = i));
+    for (let it = 0; it < 250; it++) {
+      const d = p.map(() => ({ x: 0, y: 0 }));
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        let dx = p[i].x - p[j].x, dy = p[i].y - p[j].y; const L = Math.max(0.01, Math.hypot(dx, dy)); const f = k * k / L;
+        dx /= L; dy /= L; d[i].x += dx * f; d[i].y += dy * f; d[j].x -= dx * f; d[j].y -= dy * f;
+      }
+      edges.forEach(([a, b]) => {
+        const i = idx[a], j = idx[b]; let dx = p[i].x - p[j].x, dy = p[i].y - p[j].y; const L = Math.max(0.01, Math.hypot(dx, dy)); const f = L * L / k;
+        dx /= L; dy /= L; d[i].x -= dx * f; d[i].y -= dy * f; d[j].x += dx * f; d[j].y += dy * f;
+      });
+      for (let i = 0; i < n; i++) {
+        d[i].x -= (p[i].x - W / 2) * 0.3; d[i].y -= (p[i].y - H / 2) * 0.3;
+        const L = Math.max(0.01, Math.hypot(d[i].x, d[i].y)), lim = Math.min(L, temp);
+        p[i].x += d[i].x / L * lim; p[i].y += d[i].y / L * lim;
+      }
+      temp *= 0.97;
+    }
+    const xs = p.map((q) => q.x), ys = p.map((q) => q.y);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const pos = {};
+    nodes.forEach((v, i) => { pos[v] = { x: M + (p[i].x - x0) / Math.max(1, x1 - x0) * (W - 2 * M), y: M + (p[i].y - y0) / Math.max(1, y1 - y0) * (H - 2 * M) }; });
+    const c = crossings(pos, edges);
+    if (c < bestC) { bestC = c; best = pos; }
+    if (c === 0) break;
+  }
+  return best;
+}
+/*ENGINE-END*/
+
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const el = (name, attrs) => { const e = document.createElementNS(SVGNS, name); for (const k in attrs || {}) e.setAttribute(k, attrs[k]); return e; };
+  const R = 24;
+
+  const toPos = (o) => { const p = {}; for (const k in o) p[k] = { x: o[k][0], y: o[k][1] }; return p; };
+  const PRESETS = {
+    dfs: { nodes: 'ABCDEFGH', edges: 'A-B A-C A-D B-E C-E C-F D-F E-G F-H G-H',
+      pos: { A: [70, 210], B: [230, 90], C: [230, 210], D: [230, 330], E: [400, 90], F: [400, 300], G: [570, 90], H: [570, 300] } },
+    bfs: { nodes: 'ABCDEFGH', edges: 'A-C A-D B-C B-E C-F D-F D-G E-H F-H G-H',
+      pos: { A: [60, 210], C: [230, 125], D: [230, 295], F: [400, 210], B: [400, 45], G: [400, 375], E: [570, 45], H: [570, 210] } },
+    lec: { nodes: 'ABCDEFG', edges: 'A-B A-C B-D B-E C-F E-F F-G',
+      pos: { A: [320, 45], B: [190, 140], C: [450, 140], D: [100, 250], E: [270, 250], F: [450, 250], G: [450, 360] } },
+  };
+
+  const CODE = {
+    dfs: [
+      [0, 'DFS(u):', ''],
+      [1, 'visited[u] ← true; output u', '// yığına ekle (push)'],
+      [1, 'for each neighbour v of u:', '// alfabetik sırayla'],
+      [2, 'if not visited[v]:', ''],
+      [3, 'DFS(v)', '// derine in'],
+      [1, 'return', '// yığından çıkar (pop), geri dön'],
+      [0, 'DFS(start)', '// ana çağrı, bir kez'],
+    ],
+    bfs: [
+      [0, 'BFS(s):', ''],
+      [1, 'mark s; dist[s] ← 0; queue ← [s]', ''],
+      [1, 'while queue not empty:', ''],
+      [2, 'u ← dequeue(); output u', '// kuyruğun önü'],
+      [2, 'for each neighbour v of u:', '// alfabetik sırayla'],
+      [3, 'if v not marked:', ''],
+      [4, 'mark v; dist[v] ← dist[u] + 1; enqueue(v)', '// kuyruğun arkası'],
+    ],
+  };
+
+  const S = { algo: 'dfs', src: 'dfs', g: null, start: 'A', steps: [], idx: 0, timer: null };
+  let refs = { edges: {}, nodes: {} };
+
+  /* ---------- graf kurma ---------- */
+  function parseEdges(str) {
+    const pairs = []; const re = /([A-Za-z0-9ÇĞİÖŞÜçğıöşü]+)\s*[-–—]\s*([A-Za-z0-9ÇĞİÖŞÜçğıöşü]+)/g; let m;
+    while ((m = re.exec(str))) pairs.push([m[1].toUpperCase(), m[2].toUpperCase()]);
+    return pairs;
+  }
+  function graphFromSource() {
+    const src = S.src;
+    if (PRESETS[src]) {
+      const P = PRESETS[src];
+      return makeGraph(P.nodes.split(''), parseEdges(P.edges), toPos(P.pos));
+    }
+    if (src === 'random') {
+      const n = +$('#rn').value, seed = +$('#rs').value || 0, d = $('#rd').value;
+      const r = mulberry32(seed * 7919 + n * 31);
+      const { names, pairs } = randomPairs(n, d, r);
+      const g = makeGraph(names, pairs);
+      g.pos = forceLayout(g.nodes, g.edges, r);
+      return g;
+    }
+    // custom
+    const pairs = parseEdges($('#ctext').value);
+    const err = $('#cerr');
+    const names = [...new Set(pairs.flat())];
+    let msg = '';
+    if (!pairs.length) msg = 'En az bir kenar yazın, örneğin A-B.';
+    else if (names.length > 12) msg = 'En çok 12 düğüm kullanabilirsiniz (şu an ' + names.length + ').';
+    else if (names.some((x) => x.length > 3)) msg = 'Düğüm adları en fazla 3 karakter olmalı.';
+    if (msg) { err.textContent = msg; err.hidden = false; return null; }
+    err.hidden = true;
+    const g = makeGraph(names, pairs);
+    g.pos = forceLayout(g.nodes, g.edges, mulberry32(11));
+    return g;
+  }
+
+  function loadGraph(keepStart) {
+    const g = graphFromSource();
+    if (!g) return;
+    S.g = g;
+    const sel = $('#start');
+    const prev = keepStart ? sel.value : null;
+    sel.innerHTML = g.nodes.map((n) => `<option value="${n}">${n}</option>`).join('');
+    S.start = g.nodes.includes(prev) ? prev : g.nodes[0];
+    sel.value = S.start;
+    $('#ginfo').textContent = `V = ${g.nodes.length} düğüm, E = ${g.edges.length} kenar`;
+    buildSvg();
+    rebuildSteps();
+  }
+
+  function rebuildSteps() {
+    pause();
+    S.steps = S.algo === 'dfs' ? buildDFS(S.g, S.start) : buildBFS(S.g, S.start);
+    S.idx = 0;
+    const sl = $('#slider'); sl.max = S.steps.length - 1; sl.value = 0;
+    render();
+  }
+
+  /* ---------- çizim ---------- */
+  function buildSvg() {
+    const svg = $('#svg'); svg.innerHTML = '';
+    refs = { edges: {}, nodes: {} };
+    const gE = el('g'), gN = el('g'), g = S.g;
+    g.edges.forEach(([a, b]) => {
+      const A = g.pos[a], Bp = g.pos[b];
+      const l = el('line', { x1: A.x, y1: A.y, x2: Bp.x, y2: Bp.y, class: 'edge' });
+      gE.append(l); refs.edges[ekey(a, b)] = l;
+    });
+    g.nodes.forEach((n) => {
+      const p = g.pos[n];
+      const grp = el('g', { class: 'node', transform: `translate(${p.x},${p.y})` });
+      const c = el('circle', { class: 'c', r: R });
+      const t = el('text', { class: 't' }); t.textContent = n;
+      const badge = el('g', { class: 'badge', transform: `translate(${R - 2},${-R + 2})`, visibility: 'hidden' });
+      badge.append(el('circle', { r: 11 })); const bt = el('text', {}); badge.append(bt);
+      const d = el('text', { class: 'dist', y: R + 18 });
+      grp.append(c, t, badge, d); gN.append(grp);
+      refs.nodes[n] = { grp, badge, bt, d };
+    });
+    svg.append(gE, gN);
+  }
+
+  function renderGraph(s) {
+    const fin = new Set(s.finished), seen = new Set(s.seen), tree = new Set(s.tree), skip = new Set(s.skipped);
+    const look = s.look ? ekey(s.look[0], s.look[1]) : null;
+    for (const k in refs.edges) {
+      const c = ['edge'];
+      if (tree.has(k)) c.push('tree'); else if (skip.has(k)) c.push('skip');
+      if (k === look) c.push('look');
+      refs.edges[k].setAttribute('class', c.join(' '));
+    }
+    S.g.nodes.forEach((n) => {
+      const r = refs.nodes[n]; const c = ['node'];
+      if (fin.has(n)) { c.push('done'); if (s.cur === n) c.push('ring'); }
+      else if (s.cur === n) c.push('cur');
+      else if (seen.has(n)) c.push('open');
+      r.grp.setAttribute('class', c.join(' '));
+      const oi = s.order.indexOf(n);
+      if (oi >= 0) { r.bt.textContent = oi + 1; r.badge.setAttribute('visibility', 'visible'); } else r.badge.setAttribute('visibility', 'hidden');
+      r.d.textContent = S.algo === 'bfs' && s.dist && s.dist[n] !== undefined ? 'd=' + s.dist[n] : '';
+    });
+  }
+
+  function buildLegend() {
+    const dfs = S.algo === 'dfs';
+    $('#legend').innerHTML =
+      `<span><i class="sw"></i>${dfs ? 'ziyaret edilmedi' : 'keşfedilmedi'}</span>` +
+      `<span><i class="sw open"></i>${dfs ? 'yığında' : 'kuyrukta'}</span>` +
+      `<span><i class="sw cur"></i>${dfs ? 'şu an işlenen' : 'kuyruktan çıkan'}</span>` +
+      `<span><i class="sw done"></i>tamamlandı</span>` +
+      `<span><i class="ln"></i>ağaç kenarı</span><span><i class="ln look"></i>incelenen kenar</span><span><i class="ln skip"></i>ağaç dışı</span>`;
+  }
+
+  function buildCode() {
+    const L = CODE[S.algo];
+    $('#code').innerHTML = L.map((l, i) => `<div class="cl" data-i="${i}"><span class="n">${i + 1}</span><span class="tx" style="padding-left:${l[0] * 18}px">${l[1]}${l[2] ? '  <span class="cm">' + l[2] + '</span>' : ''}</span></div>`).join('');
+    $('#codetitle').textContent = 'Sözde kod – ' + S.algo.toUpperCase();
+  }
+
+  const chips = (arr, cls) => arr.length ? arr.map((x) => `<span class="ch ${cls || ''}">${x}</span>`).join('') : '<span class="empty">henüz yok</span>';
+
+  function renderDS(s) {
+    const dfs = S.algo === 'dfs';
+    const ds = s.ds;
+    if (dfs) {
+      $('#dstitle').textContent = 'Çağrı yığını (stack)';
+      $('#dshint').textContent = 'Yığın, şu anki yolu tutar. En üstteki düğüm işlenir; geri dönüş (backtrack) yığından çıkarmaktır (pop).';
+      $('#ds').innerHTML = ds.length
+        ? `<div class="stack" aria-label="yığın">${ds.map((x, i) => `<div class="cell ${i === ds.length - 1 ? 'top' : ''}">${x}</div>`).join('')}</div><div class="tag">alt = ilk eklenen · üst = tepe (top)</div>`
+        : '<div class="stack"><span class="empty">yığın boş</span></div>';
+    } else {
+      $('#dstitle').textContent = 'Kuyruk (queue)';
+      $('#dshint').textContent = 'Kuyruk (FIFO): önden çıkar, arkadan girer. Önde bekleyen düğüm sıradaki düğümdür.';
+      $('#ds').innerHTML = ds.length
+        ? `<div class="queue" aria-label="kuyruk"><span class="tag">ön</span>${ds.map((x, i) => `<div class="cell ${i === 0 ? 'front' : ''}">${x}</div>`).join('')}<span class="tag">arka</span></div>`
+        : '<div class="queue"><span class="empty">kuyruk boş</span></div>';
+    }
+    $('#ordtitle').textContent = dfs ? 'Ziyaret sırası (çıktı)' : 'İşlenme sırası (çıktı)';
+    $('#order').innerHTML = chips(s.order);
+    const ds2 = $('#distsec'); ds2.hidden = dfs;
+    if (!dfs) $('#dist').innerHTML = S.g.nodes.map((n) => `<span class="ch d ${s.dist[n] !== undefined ? 'new' : ''}">${n}: ${s.dist[n] !== undefined ? s.dist[n] : '–'}</span>`).join('');
+  }
+
+  function renderAdj(s) {
+    $('#adj').innerHTML = S.g.nodes.map((n) => {
+      const nb = S.g.adj[n].map((v) => `<span class="${s.look && s.cur === n && s.look[1] === v ? 'look' : ''}">${v}</span>`).join('');
+      return `<div class="ar ${s.cur === n ? 'cur' : ''}"><span class="v">${n}</span><span class="ar-arrow">→</span><div class="nb">${nb}</div></div>`;
+    }).join('');
+  }
+
+  function renderSummary(s) {
+    const sum = $('#sum');
+    if (!s.done) { sum.hidden = true; return; }
+    const fmt = (a) => a.length ? a.map((k) => k.replace('|', '–')).join(', ') : 'yok';
+    let h = `<div><span class="k">${S.algo === 'dfs' ? 'Ziyaret sırası' : 'İşlenme sırası'}</span>${s.order.join(' → ')}</div>`;
+    h += `<div><span class="k">${S.algo.toUpperCase()} ağacının kenarları</span>${fmt(s.tree)}</div>`;
+    h += `<div><span class="k">Ağaç dışı kenarlar</span>${fmt(s.skipped)}</div>`;
+    if (S.algo === 'bfs') h += `<div><span class="k">Uzaklıklar</span>${S.g.nodes.filter((n) => s.dist[n] !== undefined).map((n) => n + '=' + s.dist[n]).join(', ')}</div>`;
+    h += `<div><span class="k">Zaman karmaşıklığı</span>O(V + E) (komşuluk listesiyle): her düğüm bir kez, her komşuluk listesi bir kez taranır.</div>`;
+    sum.innerHTML = h; sum.hidden = false;
+  }
+
+  function render() {
+    const s = S.steps[S.idx], n = S.steps.length;
+    renderGraph(s); renderDS(s); renderAdj(s); renderSummary(s);
+    document.querySelectorAll('#code .cl').forEach((d) => d.classList.toggle('on', +d.dataset.i === s.line));
+    $('#explain').innerHTML = s.text;
+    $('#c-step').textContent = `Adım ${S.idx + 1} / ${n}`;
+    $('#c-line').textContent = s.line >= 0 ? `Satır ${s.line + 1}` : 'Bitti';
+    $('#stepout').textContent = `${S.idx + 1} / ${n}`;
+    $('#slider').value = S.idx;
+    $('#first').disabled = $('#prev').disabled = S.idx === 0;
+    $('#next').disabled = $('#last').disabled = S.idx === n - 1;
+    $('#play').textContent = S.timer ? 'Duraklat' : (S.idx === n - 1 ? 'Baştan oynat' : 'Oynat');
+  }
+
+  /* ---------- oynatma ---------- */
+  function go(i) { S.idx = Math.max(0, Math.min(S.steps.length - 1, i)); if (S.idx === S.steps.length - 1) pause(); render(); }
+  function pause() { if (S.timer) { clearInterval(S.timer); S.timer = null; } }
+  function play() {
+    if (S.timer) { pause(); render(); return; }
+    if (S.idx === S.steps.length - 1) S.idx = 0;
+    S.timer = setInterval(() => { if (S.idx >= S.steps.length - 1) { pause(); render(); } else go(S.idx + 1); }, +$('#speed').value);
+    render();
+  }
+
+  function setAlgo(a) {
+    S.algo = a;
+    $('#b-dfs').setAttribute('aria-pressed', a === 'dfs');
+    $('#b-bfs').setAttribute('aria-pressed', a === 'bfs');
+    buildLegend(); buildCode(); rebuildSteps();
+  }
+
+  /* ---------- olaylar ---------- */
+  $('#b-dfs').onclick = () => setAlgo('dfs');
+  $('#b-bfs').onclick = () => setAlgo('bfs');
+  $('#src').onchange = (e) => {
+    S.src = e.target.value;
+    $('#randrow').hidden = S.src !== 'random';
+    $('#customrow').hidden = S.src !== 'custom';
+    loadGraph(false);
+  };
+  $('#start').onchange = (e) => { S.start = e.target.value; rebuildSteps(); };
+  $('#rn').oninput = (e) => { $('#rnout').textContent = e.target.value; loadGraph(true); };
+  $('#rd').onchange = () => loadGraph(true);
+  $('#rs').onchange = () => loadGraph(true);
+  $('#rnew').onclick = () => { $('#rs').value = Math.floor(Math.random() * 100000); loadGraph(true); };
+  $('#capply').onclick = () => loadGraph(false);
+  $('#first').onclick = () => { pause(); go(0); };
+  $('#prev').onclick = () => { pause(); go(S.idx - 1); };
+  $('#next').onclick = () => { pause(); go(S.idx + 1); };
+  $('#last').onclick = () => { pause(); go(S.steps.length - 1); };
+  $('#play').onclick = play;
+  $('#slider').oninput = (e) => { pause(); go(+e.target.value); };
+  $('#speed').onchange = () => { if (S.timer) { pause(); play(); } };
+  document.addEventListener('keydown', (e) => {
+    const t = e.target.tagName;
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+    if (t === 'BUTTON' && e.key === ' ') return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); pause(); go(S.idx + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); pause(); go(S.idx - 1); }
+    else if (e.key === ' ') { e.preventDefault(); play(); }
+  });
+
+  buildLegend(); buildCode(); loadGraph(false);
+})();
+</script>
+
+</body></html>

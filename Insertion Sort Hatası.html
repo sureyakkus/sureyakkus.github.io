@@ -1,0 +1,231 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Insertion Sort Hatası</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: üstte kod seçimi ve örnek giriş; altında iki sütun (dizi + açıklama + kontroller | kod). Telefonda tek sütun, önce dizi. */
+:root {
+  --bg: #F2F5F9; --surface: #FFFFFF; --surface2: #E9EEF5; --ink: #14202E; --muted: #566577; --line: #D3DAE4;
+  --accent: #1F5FBF; --bad: #C0392B; --good: #12795F; --warn: #B06A00; --key: #7A3FC2;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1620; --surface: #18212D; --surface2: #202C3A; --ink: #E6EBF2; --muted: #9AA8B8; --line: #2C3949;
+    --accent: #6EA0FF; --bad: #FF8A7A; --good: #4FD1A8; --warn: #F0B44C; --key: #B88CFF; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1620; --surface: #18212D; --surface2: #202C3A; --ink: #E6EBF2; --muted: #9AA8B8; --line: #2C3949;
+  --accent: #6EA0FF; --bad: #FF8A7A; --good: #4FD1A8; --warn: #F0B44C; --key: #B88CFF; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+  padding-block: 18px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 940px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+h1 { font-family: var(--f-display); font-size: clamp(1.5rem, 4.4vw, 2.1rem); line-height: 1.15; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+.lead { color: var(--muted); margin-top: 6px; max-width: 64ch; }
+code { font-family: var(--f-mono); font-size: 0.92em; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; padding: 7px 14px; border: 0; border-right: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--bg); font-weight: 600; }
+.seg.mode button[data-v="bug"][aria-pressed="true"] { background: var(--bad); }
+.seg.mode button[data-v="fix"][aria-pressed="true"] { background: var(--good); }
+.seg.mode button[aria-pressed="true"] { color: #fff; }
+:root[data-theme="dark"] .seg.mode button[aria-pressed="true"] { color: #0E1620; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg.mode button[aria-pressed="true"] { color: #0E1620; } }
+.lbl { color: var(--muted); font-size: 0.9rem; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+/* dizi */
+.status { display: flex; flex-wrap: wrap; gap: 8px 18px; font-family: var(--f-mono); font-size: 0.95rem; min-height: 1.6em; }
+.status b { font-weight: 600; }
+.status .k { color: var(--key); }
+.arr { display: flex; gap: 6px; justify-content: center; flex-wrap: nowrap; padding: 8px 0 2px; }
+.cellw { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 58px; }
+.cell { width: 58px; height: 58px; border-radius: 8px; border: 2px solid var(--line); background: var(--surface2); display: flex; align-items: center; justify-content: center; font-family: var(--f-mono); font-size: 1.3rem; font-weight: 600; position: relative; }
+.cell.sorted { background: color-mix(in srgb, var(--good) 14%, var(--surface)); border-color: color-mix(in srgb, var(--good) 40%, var(--line)); }
+.cell.keyslot { border-style: dashed; }
+.cell.cmp { border-color: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 30%, transparent); }
+.cell.moved { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+.cell.placed { border-color: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 35%, transparent); }
+.cell.warn { border-color: var(--bad); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 35%, transparent); }
+.idx { font-family: var(--f-mono); font-size: 0.8rem; color: var(--muted); }
+.ptr { height: 1.2em; font-family: var(--f-mono); font-size: 0.85rem; font-weight: 600; color: var(--warn); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.84rem; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 2px var(--bs, solid) var(--c); background: var(--bgc, transparent); }
+.say { border-left: 5px solid var(--accent); padding: 8px 12px; background: var(--surface2); border-radius: 0 8px 8px 0; min-height: 4.4em; }
+.say.bad { border-color: var(--bad); }
+.say.good { border-color: var(--good); }
+.say b { font-weight: 700; }
+.result { font-family: var(--f-mono); font-weight: 600; padding: 8px 12px; border-radius: 8px; border: 2px solid var(--line); }
+.result.bad { border-color: var(--bad); color: var(--bad); }
+.result.good { border-color: var(--good); color: var(--good); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+input[type=range] { flex: 1 1 120px; min-width: 100px; accent-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* kod */
+.code { background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 0; overflow-x: auto; }
+.ln { display: flex; font-family: var(--f-mono); font-size: 0.88rem; line-height: 1.7; padding: 0 10px; white-space: pre; border-left: 4px solid transparent; }
+.ln .no { color: var(--muted); width: 2ch; margin-right: 10px; text-align: right; user-select: none; }
+.ln.on { background: color-mix(in srgb, var(--accent) 20%, transparent); border-left-color: var(--accent); }
+.ln.diff-bug { background: color-mix(in srgb, var(--bad) 16%, transparent); }
+.ln.diff-fix { background: color-mix(in srgb, var(--good) 16%, transparent); }
+.ln.on.diff-bug { border-left-color: var(--bad); }
+.ln.on.diff-fix { border-left-color: var(--good); }
+.tag { font-family: var(--f-body); font-size: 0.8rem; font-weight: 700; margin-left: 12px; }
+.diff-bug .tag { color: var(--bad); } .diff-fix .tag { color: var(--good); }
+.note { color: var(--muted); font-size: 0.92rem; }
+
+@media (max-width: 760px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 420px) {
+  .cellw, .cell { width: 46px; } .cell { height: 46px; font-size: 1.1rem; } .arr { gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+(function () {
+  const PRESETS = { '9 4 7 2': [9, 4, 7, 2], '5 3 8 1': [5, 3, 8, 1], '1 2 3 4': [1, 2, 3, 4] };
+  const S = { mode: 'bug', preset: '9 4 7 2', step: null, timer: null };
+  const app = document.getElementById('app');
+  const minus = v => String(v).replace('-', '−');
+
+  /* Algoritmayı çalıştırıp her adımı kaydeder */
+  function simulate(input, fixed) {
+    const a = input.slice(), n = a.length, steps = [];
+    const snap = o => steps.push(Object.assign({ arr: a.slice(), sortedTo: 1, i: null, key: null, j: null }, o));
+    snap({ line: 1, text: `Başlangıç: <b>[${a.join(', ')}]</b>. İlk eleman tek başına sıralı sayılır. i = 1’den başlıyoruz.`, sortedTo: 1 });
+    for (let i = 1; i < n; i++) {
+      const key = a[i]; let j = i - 1;
+      snap({ line: 3, i, key, j, sortedTo: i, keyslot: i, text: `<b>i = ${i}:</b> key = ${key} alınır, j = ${j} (key’in hemen solu). Amaç: ${key}’i soldaki sıralı kısımda doğru yere koymak.` });
+      for (;;) {
+        const inRange = fixed ? j >= 0 : j > 0;
+        if (!inRange) {
+          if (fixed) {
+            snap({ line: 5, i, key, j, sortedTo: i, keyslot: i, text: `j = −1: dizinin başını geçtik, soldaki <b>bütün</b> elemanlara bakıldı. Döngü biter.` });
+          } else if (a[j] > key) {
+            snap({ line: 5, i, key, j, sortedTo: i, keyslot: i, warn: j, tone: 'bad', text: `⚠ <b>j = ${j}</b>, ama koşul <code>j &gt; 0</code> olduğu için döngü biter. Oysa a[${j}] = ${a[j]}, key = ${key}’den <b>büyük</b>. Kaydırılması gerekiyordu, kontrol bile edilmedi!` });
+          } else {
+            snap({ line: 5, i, key, j, sortedTo: i, keyslot: i, text: `j = ${j}: <code>j &gt; 0</code> yanlış, döngü biter. Bu sefer zararsız, çünkü a[${j}] = ${a[j]} zaten key’den küçük.` });
+          }
+          break;
+        }
+        if (a[j] > key) {
+          const from = j; a[j + 1] = a[j]; j--;
+          snap({ line: 6, i, key, j, sortedTo: i, keyslot: i, moved: from + 1, cmp: from, text: `a[${from}] = ${a[from + 1]} &gt; ${key} → ${a[from + 1]} bir sağa <b>kaydırılır</b> (a[${from + 1}] = ${a[from + 1]}). j = ${minus(j)}.` });
+        } else {
+          snap({ line: 5, i, key, j, sortedTo: i, keyslot: i, cmp: j, text: `a[${j}] = ${a[j]} &gt; ${key} değil → ${key} için <b>doğru yer bulundu</b>. Döngü biter.` });
+          break;
+        }
+      }
+      a[j + 1] = key;
+      const wrong = !fixed && j === 0 && a[0] > key;
+      snap({ line: 9, i, key, j, sortedTo: i + 1, placed: j + 1, warn: wrong ? 0 : undefined, tone: wrong ? 'bad' : undefined,
+        text: wrong ? `a[${j + 1}] = ${key}: key bu yere yazıldı. Ama ${a[0]} hâlâ a[0]’da, yani <b>${a[0]}, ${key}’in solunda kaldı</b>. Dizi bozuk.` : `a[${j + 1}] = ${key}: key yerine yazıldı. Soldaki ${i + 1} eleman artık sıralı.` });
+    }
+    const ok = a.every((v, k) => k === 0 || a[k - 1] <= v);
+    const hasWarn = steps.some(s => s.warn !== undefined);
+    snap({ line: 11, sortedTo: n, done: true, ok, tone: ok ? 'good' : 'bad',
+      text: ok ? (fixed ? 'Bitti. Her elemanın solundaki büyükler kaydırıldı, dizi sıralı.' : 'Bitti. Bu girişte hata görünmedi: a[0]’ın kaydırılması gerekmedi. Hata, ilk eleman key’den büyükse ortaya çıkar. 9 4 7 2 ile dene.') : 'Bitti, ama dizi <b>sıralı değil</b>. Hata: ilk eleman hiçbir zaman kaydırılamadı.' });
+    return steps;
+  }
+
+  const CODE = fixed => [
+    'void sort(int a[], int n) {',
+    '  for (int i = 1; i < n; i++) {',
+    '    int key = a[i];',
+    '    int j = i - 1;',
+    fixed ? '    while (j >= 0 && a[j] > key) {' : '    while (j > 0 && a[j] > key) {',
+    '      a[j + 1] = a[j];',
+    '      j--;',
+    '    }',
+    '    a[j + 1] = key;',
+    '  }',
+    '}'];
+  const lineOf = { 1: [2], 3: [3, 4], 5: [5], 6: [6, 7], 9: [9], 11: [11] };
+
+  function render() {
+    const fixed = S.mode === 'fix', input = PRESETS[S.preset];
+    const steps = simulate(input, fixed), N = steps.length - 1;
+    if (S.step === null || S.step > N) S.step = N;
+    const st = steps[S.step], on = lineOf[st.line] || [];
+    let h = `<header><h1>Insertion Sort: hata nerede?</h1>
+      <p class="lead">Aynı diziyi önce hatalı, sonra düzeltilmiş kodla adım adım sırala. Farkı 5. satır yaratıyor.</p></header>
+      <div class="bar">
+        <span class="seg mode" role="group" aria-label="Kod"><button data-act="mode" data-v="bug" aria-pressed="${!fixed}">Hatalı kod</button><button data-act="mode" data-v="fix" aria-pressed="${fixed}">Düzeltilmiş kod</button></span>
+        <span class="lbl">Dizi:</span><span class="seg" role="group" aria-label="Örnek dizi">` + Object.keys(PRESETS).map(k => `<button data-act="preset" data-v="${k}" aria-pressed="${S.preset === k}">${k.replace(/ /g, ', ')}</button>`).join('') + `</span></div>`;
+
+    h += `<div class="grid"><section class="card">
+      <div class="status">` + (st.i === null ? '<span>&nbsp;</span>' : `<span>i = <b>${st.i}</b></span><span class="k">key = <b>${st.key}</b></span><span>j = <b>${minus(st.j)}</b></span>`) + `</div>
+      <div class="arr" aria-label="Dizi">` + st.arr.map((v, k) => {
+        const c = ['cell'];
+        if (k < st.sortedTo) c.push('sorted');
+        if (st.keyslot === k) c.push('keyslot');
+        if (st.cmp === k) c.push('cmp');
+        if (st.moved === k) c.push('moved');
+        if (st.placed === k) c.push('placed');
+        if (st.warn === k) c.push('warn');
+        return `<div class="cellw"><div class="ptr">${st.j === k && st.i !== null && !st.done ? '▲ j' : ''}</div><div class="cell ${c.slice(1).join(' ')}">${v}</div><div class="idx">${k}</div></div>`;
+      }).join('') + `</div>
+      <div class="legend"><span style="--c:var(--good);--bgc:color-mix(in srgb, var(--good) 20%, transparent)">sıralı saydığımız kısım</span><span style="--c:var(--warn)">karşılaştırılan</span><span style="--c:var(--accent)">kaydırılan</span><span style="--c:var(--muted);--bs:dashed">key’in eski yeri</span></div>
+      <div class="say ${st.tone || ''}" aria-live="polite">${st.text}</div>` +
+      (st.done ? `<div class="result ${st.ok ? 'good' : 'bad'}">Çıktı: ${st.arr.join(' ')} &nbsp;${st.ok ? '✓' : '✗ beklenen: ' + input.slice().sort((x, y) => x - y).join(' ')}</div>` : '') +
+      `<div class="controls">
+        <button class="btn" data-act="reset" ${S.step === 0 ? 'disabled' : ''}>⏮ Başa al</button>
+        <button class="btn" data-act="back" ${S.step === 0 ? 'disabled' : ''}>◀ Geri</button>
+        <button class="btn" data-act="next" ${S.step >= N ? 'disabled' : ''}>İleri ▶</button>
+        <button class="btn primary" data-act="play">${S.timer ? 'Durdur' : (S.step >= N ? 'Baştan oynat' : 'Oynat')}</button>
+        <input type="range" id="stepRange" min="0" max="${N}" value="${S.step}" aria-label="Adım"><span class="note">${S.step} / ${N}</span></div></section>
+      <section class="card"><div class="code" aria-label="Kod">` +
+      CODE(fixed).map((t, i) => {
+        const cls = ['ln']; if (on.includes(i + 1)) cls.push('on'); if (i === 4) cls.push(fixed ? 'diff-fix' : 'diff-bug');
+        const tag = i === 4 ? `<span class="tag">${fixed ? '← doğru' : '← hatalı'}</span>` : '';
+        return `<div class="${cls.join(' ')}"><span class="no">${i + 1}</span><span>${t.replace(/&/g, '&amp;').replace(/</g, '&lt;')}${tag}</span></div>`;
+      }).join('') + `</div>
+      <p class="note">Mavi çizgi, o adımda çalışan satırı gösterir. <code>j</code> key’in solundaki karşılaştırılan elemanın indeksidir. Geçerli indeksler 0’dan başlar, bu yüzden döngü <code>j = 0</code> iken de çalışmalıdır.</p></section></div>`;
+    app.innerHTML = h;
+  }
+
+  function stop() { if (S.timer) { clearInterval(S.timer); S.timer = null; } }
+  function total() { return simulate(PRESETS[S.preset], S.mode === 'fix').length - 1; }
+  app.addEventListener('click', e => {
+    const t = e.target.closest('[data-act]'); if (!t) return;
+    const act = t.dataset.act, N = total();
+    if (act === 'mode') { stop(); S.mode = t.dataset.v; S.step = null; }
+    else if (act === 'preset') { stop(); S.preset = t.dataset.v; S.step = null; }
+    else if (act === 'reset') { stop(); S.step = 0; }
+    else if (act === 'back') { stop(); S.step = Math.max(0, S.step - 1); }
+    else if (act === 'next') { stop(); S.step = Math.min(N, S.step + 1); }
+    else if (act === 'play') {
+      if (S.timer) stop();
+      else { if (S.step >= N) S.step = 0; S.timer = setInterval(() => { if (S.step >= total()) stop(); else S.step++; render(); }, 1100); }
+    }
+    render();
+  });
+  app.addEventListener('input', e => { if (e.target.id === 'stepRange') { stop(); S.step = +e.target.value; render(); const r = document.getElementById('stepRange'); if (r) r.focus(); } });
+  render();
+})();
+</script>
+
+</body></html>

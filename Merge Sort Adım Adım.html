@@ -1,0 +1,840 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Merge Sort Adım Adım</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sol sütunda kod + açıklama, sağ sütunda çağrı ağacı + yığın; alt çubukta oynatma kontrolleri. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --surface-2: #e9eef2;
+  --fg: #16212b;
+  --fg-soft: #51606d;
+  --line: #cfd8e0;
+  --accent: #0b6e8a;
+  --accent-soft: #d6eef5;
+  --cnt: #b45309;
+  --cnt-soft: #fdebd2;
+  --done: #6b7a88;
+  --code-bg: #0f1c26;
+  --code-fg: #d8e4ee;
+  --code-dim: #6d8497;
+  --code-hl: #1c3a4d;
+  --code-hl-edge: #4fc3e0;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1419; --surface: #151f27; --surface-2: #1d2a34; --fg: #e4ecf2; --fg-soft: #93a4b3;
+    --line: #2b3b47; --accent: #4fc3e0; --accent-soft: #14323f; --cnt: #f5b14a; --cnt-soft: #3a2a10;
+    --done: #8fa1b0; --code-bg: #0a1117; --code-fg: #d8e4ee; --code-dim: #6d8497; --code-hl: #17384a; --code-hl-edge: #4fc3e0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1419; --surface: #151f27; --surface-2: #1d2a34; --fg: #e4ecf2; --fg-soft: #93a4b3;
+  --line: #2b3b47; --accent: #4fc3e0; --accent-soft: #14323f; --cnt: #f5b14a; --cnt-soft: #3a2a10;
+  --done: #8fa1b0; --code-bg: #0a1117; --code-fg: #d8e4ee; --code-dim: #6d8497; --code-hl: #17384a; --code-hl-edge: #4fc3e0;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 20px 110px; }
+* { box-sizing: border-box; }
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 1.5rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+.lede { margin: 4px 0 0; color: var(--fg-soft); max-width: 70ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+.label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-soft); font-weight: 600; margin: 0 0 10px; }
+
+/* kod */
+.code { background: var(--code-bg); border-radius: 8px; padding: 10px 0; font-family: var(--font-mono); font-size: 0.86rem; overflow-x: auto; }
+.cl { display: flex; align-items: center; gap: 10px; padding: 3px 12px 3px 10px; border-left: 3px solid transparent; color: var(--code-fg); white-space: pre; min-width: max-content; }
+.cl .no { color: var(--code-dim); width: 1.2em; text-align: right; user-select: none; }
+.cl .note { margin-left: auto; padding-left: 18px; color: var(--code-hl-edge); font-size: 0.78rem; }
+.cl .note.y { color: #6ee7a0; }
+.cl .note.n { color: #ff9b8f; }
+.cl .note { font-weight: 500; }
+.cl.on { background: var(--code-hl); border-left-color: var(--code-hl-edge); }
+.running { margin: 0 0 8px; font-size: 0.9rem; color: var(--fg-soft); }
+.running b { color: var(--fg); font-family: var(--font-mono); font-weight: 600; }
+
+.explain { font-size: 1.02rem; min-height: 4.6em; margin: 0; }
+.stepno { font-family: var(--font-mono); font-size: 0.8rem; color: var(--fg-soft); margin-bottom: 6px; display: block; }
+
+/* cnt */
+.cntrow { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.cnt { font-family: var(--font-mono); font-weight: 600; font-size: 3rem; line-height: 1; color: var(--cnt); font-variant-numeric: tabular-nums; background: var(--cnt-soft); border-radius: 8px; padding: 8px 16px; min-width: 2.2em; text-align: center; }
+.cnt.flash { animation: pop 0.35s ease-out; }
+@keyframes pop { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .cnt.flash { animation: none; } }
+.cntmeta { color: var(--fg-soft); font-size: 0.9rem; flex: 1; min-width: 12em; }
+.cells { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+.cell { width: 26px; height: 26px; border-radius: 5px; border: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.7rem; display: grid; place-items: center; color: var(--fg-soft); font-variant-numeric: tabular-nums; }
+.cell.fill { background: var(--cnt); border-color: var(--cnt); color: var(--bg); font-weight: 600; }
+.cellnote { font-size: 0.82rem; color: var(--fg-soft); margin: 8px 0 0; }
+
+/* ağaç */
+.treebox { overflow-x: auto; }
+svg.tree { display: block; min-width: 520px; width: 100%; height: auto; }
+.tree text { font-family: var(--font-mono); fill: var(--fg); }
+.tree .lvl { font-family: var(--font-body); font-size: 11px; fill: var(--fg-soft); }
+.tree .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+.tree .edge.live { stroke: var(--accent); }
+.tree .nrect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.tree .nn { font-size: 15px; font-weight: 600; text-anchor: middle; }
+.tree .nw { font-size: 10.5px; text-anchor: middle; fill: var(--fg-soft); }
+.tree .node.wait .nrect { stroke: var(--accent); stroke-dasharray: none; stroke-width: 2; fill: var(--accent-soft); }
+.tree .node.active .nrect { stroke: var(--accent); stroke-dasharray: none; fill: var(--accent); stroke-width: 2; }
+.tree .node.active text { fill: #ffffff; }
+:root[data-theme="dark"] .tree .node.active text { fill: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tree .node.active text { fill: #06222b; } }
+.tree .node.done .nrect { stroke: var(--done); stroke-dasharray: none; fill: var(--surface-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; font-size: 0.8rem; color: var(--fg-soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 12px; border-radius: 3px; border: 1.5px solid var(--line); display: inline-block; }
+.sw.idle { border-style: dashed; background: var(--surface); }
+.sw.active { background: var(--accent); border-color: var(--accent); }
+.sw.wait { background: var(--accent-soft); border-color: var(--accent); }
+.sw.done { background: var(--surface-2); border-color: var(--done); }
+
+/* yığın */
+.stack { display: flex; flex-direction: column-reverse; gap: 6px; min-height: 44px; }
+.frame { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border: 1.5px solid var(--accent); border-radius: 7px; padding: 6px 10px; background: var(--accent-soft); font-size: 0.88rem; }
+.frame code { font-family: var(--font-mono); font-weight: 600; }
+.frame.top { background: var(--accent); color: #fff; }
+:root[data-theme="dark"] .frame.top { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .frame.top { color: #06222b; } }
+.empty { color: var(--fg-soft); font-size: 0.9rem; padding: 6px 2px; }
+
+/* seviyeler */
+.levels { display: flex; flex-direction: column; gap: 10px; }
+.lv { display: grid; grid-template-columns: 5.5em minmax(0, 1fr) 4.6em; gap: 10px; align-items: center; font-size: 0.88rem; }
+.bar { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--cnt); width: 0; transition: width 0.15s; }
+.lv .v { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.sum { margin: 12px 0 0; font-size: 0.92rem; color: var(--fg-soft); }
+.sum b { color: var(--cnt); font-family: var(--font-mono); }
+
+/* kontroller */
+.bar-ctl { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 5; }
+.ctl { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button, select { font: inherit; color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 12px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] button.primary { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #06222b; } }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.slider span { font-family: var(--font-mono); font-size: 0.82rem; color: var(--fg-soft); white-space: nowrap; }
+.spacer { flex: 1; }
+
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg button { padding: 8px 14px; }
+.seg button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] .seg button[aria-selected="true"] { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg button[aria-selected="true"] { color: #06222b; } }
+.qtext { margin: 0 0 10px; font-size: 0.95rem; }
+.ans { margin: 0; padding-left: 1.1em; font-size: 0.93rem; display: flex; flex-direction: column; gap: 6px; }
+.ans li { padding-left: 2px; }
+.ans code, .qtext code { font-family: var(--font-mono); font-size: 0.86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.arr { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; }
+.box { width: 62px; height: 62px; border-radius: 9px; border: 2px solid var(--line); background: var(--surface); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 1.35rem; position: relative; font-variant-numeric: tabular-nums; }
+.box small { font-size: 0.7rem; font-weight: 600; position: absolute; right: 6px; bottom: 3px; }
+.box small.ta { color: var(--accent); } .box small.tb { color: var(--cnt); }
+.tile.sorted .box { background: var(--surface-2); border-color: var(--done); color: var(--fg-soft); }
+.tile.isi .box { border-color: var(--accent); }
+.tile.isj .box { background: var(--accent-soft); border-color: var(--accent); }
+.tile.ismin .box { background: var(--cnt-soft); border-color: var(--cnt); color: var(--cnt); }
+.tile.swapped .box { background: var(--cnt-soft); border-color: var(--cnt); animation: pop 0.35s ease-out; }
+.tile .ix { font-family: var(--font-mono); font-size: 0.75rem; color: var(--fg-soft); }
+.tile .mk { font-family: var(--font-mono); font-size: 0.72rem; min-height: 2.6em; text-align: center; line-height: 1.25; color: var(--accent); font-weight: 600; }
+.tile .mk .m { color: var(--cnt); display: block; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 420px) { .stats { grid-template-columns: minmax(0, 1fr); } }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font-family: var(--font-mono); font-size: 1.9rem; line-height: 1.1; color: var(--cnt); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.8rem; color: var(--fg-soft); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; min-width: 440px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; }
+th { background: var(--surface-2); font-weight: 600; }
+td.mono { font-family: var(--font-mono); }
+tr.cur td { background: var(--accent-soft); }
+tr.pending td { color: var(--fg-soft); }
+.calc { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 8px; }
+.calc input { width: 6em; font: inherit; font-family: var(--font-mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); }
+.calc-out { font-family: var(--font-mono); font-size: 0.95rem; margin: 4px 0; }
+.calc-out b { color: var(--cnt); }
+.tempslot { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-family: var(--font-mono); font-size: 0.85rem; color: var(--fg-soft); flex-wrap: wrap; }
+.tbox { min-width: 62px; height: 48px; padding: 0 10px; border-radius: 9px; border: 2px dashed var(--line); background: var(--surface); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 1.15rem; color: var(--fg-soft); }
+.tbox.set { border-style: solid; border-color: var(--cnt); background: var(--cnt-soft); color: var(--cnt); }
+.tbox.flash { animation: pop 0.35s ease-out; }
+.tempslot .why { font-family: var(--font-body); font-size: 0.82rem; }
+td.tcode { font-family: var(--font-mono); text-align: left; white-space: nowrap; }
+td.hl { background: var(--cnt-soft); font-weight: 600; color: var(--cnt); }
+.msg { margin: 0; color: var(--fg-soft); font-size: 0.9rem; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--font-mono); font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); }
+.chip.fixed { text-decoration: line-through; color: var(--fg-soft); background: var(--surface-2); border-color: var(--done); }
+.chip.on { background: var(--cnt-soft); border-color: var(--cnt); color: var(--cnt); font-weight: 600; }
+
+.tile.hole .box { border-style: dashed; border-color: var(--cnt); }
+.tile.hole.sorted .box { border-style: dashed; border-color: var(--cnt); }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] .seg button[aria-pressed="true"] { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #06222b; } }
+.code { max-height: 470px; overflow: auto; position: relative; }
+.cl .note { padding-left: 18px; }
+.stats4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 520px) { .stats4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile.out { opacity: 0.38; }
+.tile.rng .box { border-color: var(--accent); }
+.tile.sm { width: 52px; } .tile.sm .box { width: 52px; height: 52px; font-size: 1.15rem; }
+.box small.tc { color: var(--fg-soft); }
+.tile.gone .box { background: var(--surface-2); border-color: var(--done); color: var(--fg-soft); }
+.tile.empty .box { border-style: dashed; color: var(--fg-soft); font-weight: 400; }
+.row-l { display: flex; align-items: flex-start; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+.row-l > .nm { font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; width: 2.2em; padding-top: 14px; color: var(--fg-soft); }
+.row-l .arr { gap: 8px; }
+.tile .mk { min-height: 1.5em; }
+.treebox { overflow-x: auto; padding-bottom: 4px; }
+.tree { display: grid; gap: 8px 4px; min-width: 300px; }
+.tn { border: 1.5px dashed var(--line); border-radius: 8px; padding: 4px 6px 5px; text-align: center; min-width: 0; background: var(--surface); }
+.tn small { display: block; font-family: var(--font-mono); font-size: 0.68rem; color: var(--fg-soft); }
+.tn .vs { font-family: var(--font-mono); font-weight: 600; font-size: 0.92rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tn.unseen .vs { color: var(--line); }
+.tn.active { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
+.tn.cur { border-style: solid; border-color: var(--accent); background: var(--accent); }
+.tn.cur small, .tn.cur .vs { color: #fff; }
+:root[data-theme="dark"] .tn.cur small, :root[data-theme="dark"] .tn.cur .vs { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tn.cur small, :root:not([data-theme="light"]) .tn.cur .vs { color: #06222b; } }
+.tn.merging { border-style: solid; border-color: var(--cnt); background: var(--cnt-soft); }
+.tn.merging .vs { color: var(--cnt); }
+.tn.done { border-style: solid; border-color: var(--done); background: var(--surface-2); }
+.sw.merging { background: var(--cnt-soft); border-color: var(--cnt); }
+.stack { min-height: 44px; }
+.frame { align-items: center; }
+.frame .st { font-size: 0.8rem; opacity: 0.9; }
+.frame.mg { border-color: var(--cnt); background: var(--cnt-soft); }
+.frame.mg.top { background: var(--cnt); color: #fff; }
+:root[data-theme="dark"] .frame.mg.top { color: #1d1204; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .frame.mg.top { color: #1d1204; } }
+.chip.v { min-width: 5.2em; text-align: center; }
+.chip.v.na { color: var(--fg-soft); background: var(--surface-2); border-style: dashed; }
+.custom { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.custom input { font: inherit; font-family: var(--font-mono); padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); width: min(22em, 100%); }
+.err { color: #c0392b; font-size: 0.85rem; margin: 6px 0 0; }
+:root[data-theme="dark"] .err { color: #ff9b8f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .err { color: #ff9b8f; } }
+.lv { grid-template-columns: 6em minmax(0, 1fr) 5em; }
+.facts { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; font-size: 0.93rem; }
+.facts code { font-family: var(--font-mono); font-size: 0.86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+@media (max-width: 640px) { body { padding-block: 20px 200px; } }
+.dc { position: relative; }
+.dc .tree { position: relative; z-index: 1; gap: 22px 4px; }
+.edges { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; overflow: visible; }
+.edges path { fill: none; stroke: var(--line); stroke-width: 1.6; }
+.edges path.hot { stroke: var(--accent); stroke-width: 2.2; }
+.tn, .mn { border: 1.5px dashed var(--line); border-radius: 8px; padding: 4px 5px 5px; text-align: center; min-width: 0; background: var(--surface); }
+.tn .vs, .mn .vs { display: flex; justify-content: center; align-items: center; gap: 3px; flex-wrap: nowrap; }
+.mn small { display: block; font-family: var(--font-mono); font-size: 0.68rem; color: var(--fg-soft); }
+.cb { min-width: 24px; height: 24px; padding: 0 3px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface); display: inline-grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 0.82rem; font-variant-numeric: tabular-nums; color: var(--fg); }
+.cb.ph { border-style: dashed; color: var(--line); font-weight: 400; }
+.spl { width: 3px; height: 28px; background: var(--accent); border-radius: 2px; margin: 0 2px; flex: none; }
+.tn.unseen .cb, .tn.unseen small { opacity: 0.5; }
+.tn.seen { border-style: solid; border-color: var(--done); background: var(--surface-2); }
+.tn.active { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
+.tn.cur { border-style: solid; border-color: var(--accent); background: var(--accent); }
+.tn.cur .cb { background: var(--surface); }
+.mn.wait small { opacity: 0.5; }
+.mn.merging { border-style: solid; border-color: var(--cnt); background: var(--cnt-soft); }
+.mn.merging .cb:not(.ph) { border-color: var(--cnt); color: var(--cnt); }
+.mn.done { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
+.mn.done .cb { border-color: var(--accent); }
+.row-l[hidden] { display: none; }
+</style>
+<div class="wrap">
+  <header>
+    <h1>Merge Sort adım adım</h1>
+    <p class="lede">Diziyi ortadan ikiye böl, her yarıyı kendi içinde sırala, sonra iki sıralı yarıyı birleştir. Her satır tek tek çalışır: hangi satıra girildiğini, orada neyin sorgulandığını ve koşulun sonucunu kodun yanında görürsün. İleri düğmesi (veya → tuşu) bir adım ilerletir.</p>
+  </header>
+
+  <div class="seg" role="tablist" aria-label="Dizi seçimi" id="seg">
+    <button role="tab" id="tab-lab" aria-selected="true" data-a="12,4,9,2,7">[12, 4, 9, 2, 7]</button>
+    <button role="tab" id="tab-seven" aria-selected="false" data-a="38,27,43,3,9,82,10">[38, 27, 43, 3, 9, 82, 10]</button>
+    <button role="tab" id="tab-dup" aria-selected="false" data-a="5,3,5,1,3">[5, 3, 5, 1, 3] tekrarlı</button>
+  </div>
+  <form class="custom" id="customform" aria-label="Kendi dizin">
+    <label for="cin">Kendi dizin (2–8 sayı):</label>
+    <input id="cin" type="text" value="8, 3, 6, 1, 5, 2" inputmode="numeric" autocomplete="off">
+    <button type="submit" id="capply">Uygula</button>
+  </form>
+  <p class="err" id="err" hidden></p>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card" aria-label="Kod">
+        <p class="label">Kod</p>
+        <p class="running" id="running"></p>
+        <div class="code" id="code"></div>
+      </section>
+      <section class="card" aria-live="polite">
+        <p class="label">Bu adımda ne oluyor</p>
+        <span class="stepno" id="stepno"></span>
+        <p class="explain" id="explain"></p>
+      </section>
+      <section class="card">
+        <p class="label">Merge Sort hakkında</p>
+        <ul class="facts">
+          <li>Zaman: en iyi, ortalama, en kötü durumda <code>Θ(n log n)</code>. Dizi kaç kez yarıya bölünür: <code>log₂ n</code> seviye. Her seviyede toplam <code>n</code> eleman birleştirilir.</li>
+          <li>Özyineleme bağıntısı: <code>T(n) = 2T(n/2) + Θ(n)</code>.</li>
+          <li>Ek bellek: <code>L</code> ve <code>R</code> geçici dizileri yüzünden <code>O(n)</code>.</li>
+          <li>Kararlı (stable): <code>L[i] &lt;= R[j]</code> koşulunda eşit elemanlarda soldaki alınır. Tekrarlı diziyi dene: a, b etiketli eşit değerlerin sırası bozulmaz.</li>
+          <li>Insertion/Selection/Bubble Sort <code>O(n²)</code> idi; Merge Sort büyük dizilerde belirgin biçimde hızlıdır.</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <p class="label">Dizi a</p>
+        <div class="arr" id="arr"></div>
+        <div class="row-l" id="rowL"><span class="nm">L</span><div class="arr" id="arrL"></div></div>
+        <div class="row-l" id="rowR"><span class="nm">R</span><div class="arr" id="arrR"></div></div>
+        <p class="cellnote" id="mnote"></p>
+        <div class="legend">
+          <span><i class="sw wait"></i>karşılaştırılan elemanlar</span>
+          <span><i class="sw" style="background:var(--cnt-soft);border-color:var(--cnt)"></i>yazılan / kopyalanan hücre</span>
+          <span><i class="sw done"></i>L veya R'de alınmış eleman</span>
+        </div>
+      </section>
+      <section class="card">
+        <p class="label">1 · Böl: dizi her çağrıda ikiye ayrılır (yukarıdan aşağı)</p>
+        <div class="treebox"><div class="dc" id="dc1"><svg class="edges" id="eg1" aria-hidden="true"></svg><div class="tree" id="tree"></div></div></div>
+        <p class="cellnote">Her kutu bir mergeSort çağrısıdır. Dikey çizgi, <code>mid</code> hesaplandıktan sonra dizinin nerede ikiye ayrıldığını gösterir. Tek elemana inince bölme durur.</p>
+      </section>
+      <section class="card">
+        <p class="label">2 · Birleştir: sıralı parçalar tek parçada toplanır (aşağıdan yukarı)</p>
+        <div class="treebox"><div class="dc" id="dc2"><svg class="edges" id="eg2" aria-hidden="true"></svg><div class="tree" id="tree2"></div></div></div>
+        <p class="cellnote">Burada ağaç ters okunur: en üstte tek elemanlı parçalar, en altta tamamen sıralı dizi. Bir kutu, merge o parçayı yazdıkça dolar.</p>
+        <div class="legend">
+          <span><i class="sw idle"></i>henüz çağrılmadı / henüz hazır değil</span>
+          <span><i class="sw wait"></i>çağrıldı, alt çağrıları bekliyor</span>
+          <span><i class="sw active"></i>şu an çalışan</span>
+          <span><i class="sw merging"></i>birleştiriliyor</span>
+          <span><i class="sw done"></i>sıralandı</span>
+        </div>
+      </section>
+      <section class="card">
+        <p class="label">Değişkenler</p>
+        <div class="chips" id="vars"></div>
+      </section>
+      <section class="card">
+        <p class="label">Çağrı yığını</p>
+        <div class="stack" id="stack"></div>
+      </section>
+      <section class="card">
+        <p class="label">Sayaçlar</p>
+        <div class="stats4">
+          <div class="stat"><b id="s-cmp">0</b><span>karşılaştırma (L[i] &lt;= R[j])</span></div>
+          <div class="stat"><b id="s-wr">0</b><span>a'ya yazma</span></div>
+          <div class="stat"><b id="s-mg">0</b><span>merge çağrısı</span></div>
+          <div class="stat"><b id="s-ms">0</b><span>mergeSort çağrısı</span></div>
+        </div>
+      </section>
+      <section class="card">
+        <p class="label">Seviye başına iş</p>
+        <div class="levels" id="levels"></div>
+        <p class="sum" id="sum"></p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="bar-ctl">
+  <div class="ctl">
+    <div class="slider"><input type="range" id="slider" min="0" value="0" aria-label="Adım"><span id="pos"></span></div>
+    <div class="btns">
+      <button id="reset">Başa dön</button>
+      <button id="prev">← Geri</button>
+      <button id="next" class="primary">İleri →</button>
+      <button id="play">▶ Oynat</button>
+      <button id="skipcall" title="Bir sonraki mergeSort çağrısına git">Sonraki çağrı</button>
+      <button id="skipcmp" title="Bir sonraki L[i] <= R[j] karşılaştırmasına git">Sonraki karşılaştırma</button>
+      <button id="skipmerge" title="Şu anki merge'ün sonuna git">Merge'ü bitir</button>
+      <span class="spacer"></span>
+      <label for="speed" style="font-size:0.85rem;color:var(--fg-soft)">Hız</label>
+      <select id="speed">
+        <option value="1200">Yavaş</option>
+        <option value="650" selected>Normal</option>
+        <option value="250">Hızlı</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+var CODE = [
+"void mergeSort(int a[], int left, int right) {",
+"  if (left < right) {",
+"    int mid = (left + right) / 2;",
+"    mergeSort(a, left, mid);",
+"    mergeSort(a, mid + 1, right);",
+"    merge(a, left, mid, right);",
+"  }",
+"}",
+"",
+"void merge(int a[], int left, int mid, int right) {",
+"  int n1 = mid - left + 1;",
+"  int n2 = right - mid;",
+"  int L[n1], R[n2];",
+"  for (int x = 0; x < n1; x++)",
+"    L[x] = a[left + x];",
+"  for (int y = 0; y < n2; y++)",
+"    R[y] = a[mid + 1 + y];",
+"  int i = 0, j = 0, k = left;",
+"  while (i < n1 && j < n2) {",
+"    if (L[i] <= R[j]) {",
+"      a[k] = L[i];",
+"      i++;",
+"    } else {",
+"      a[k] = R[j];",
+"      j++;",
+"    }",
+"    k++;",
+"  }",
+"  while (i < n1) {",
+"    a[k] = L[i];",
+"    i++;",
+"    k++;",
+"  }",
+"  while (j < n2) {",
+"    a[k] = R[j];",
+"    j++;",
+"    k++;",
+"  }",
+"}"
+];
+var $ = function (id) { return document.getElementById(id); };
+function lab(x) { return x.v + (x.t || ""); }
+function mkArr(vals) {
+  var cnt = {}, seen = {};
+  vals.forEach(function (v) { cnt[v] = (cnt[v] || 0) + 1; });
+  return vals.map(function (v, idx) {
+    var t = "";
+    if (cnt[v] > 1) { seen[v] = (seen[v] || 0) + 1; t = String.fromCharCode(96 + seen[v]); }
+    return { v: v, t: t, id: idx };
+  });
+}
+function cp(x) { return x ? { v: x.v, t: x.t, id: x.id } : null; }
+
+function sim(init) {
+  var a = init.map(cp);
+  var n = a.length, comps = 0, writes = 0, merges = 0, calls = 0;
+  var stack = [], done = {}, steps = [], dw = {}, M = null, mc = 0, mw = 0;
+  var maxD = 0, nodes = [];
+  (function build(l, r, d, p) {
+    nodes.push({ l: l, r: r, d: d, key: l + "-" + r, p: p });
+    if (d > maxD) maxD = d;
+    if (l < r) { var m = Math.floor((l + r) / 2); build(l, m, d + 1, l + "-" + r); build(m + 1, r, d + 1, l + "-" + r); }
+  })(0, n - 1, 0, null);
+  var init0 = a.map(cp);
+  var depths = [];
+  nodes.forEach(function (nd) { if (nd.l < nd.r && depths.indexOf(nd.d) < 0) depths.push(nd.d); });
+  depths.sort(function (x, y) { return y - x; });
+  function rng(l, r) { return "[" + a.slice(l, r + 1).map(lab).join(", ") + "]"; }
+  function snap(kind, lines, text, note, ex) {
+    var s = {
+      kind: kind, lines: lines, text: text, note: note || {},
+      arr: a.map(cp),
+      stack: stack.map(function (f) { return { type: f.type, l: f.l, r: f.r, mid: f.mid, wait: f.wait, key: f.key }; }),
+      done: Object.assign({}, done),
+      M: M ? { l: M.l, mid: M.mid, r: M.r, n1: M.n1, n2: M.n2, L: M.L.map(cp), R: M.R.map(cp), i: M.i, j: M.j, k: M.k, d: M.d, loop: M.loop } : null,
+      comps: comps, writes: writes, merges: merges, calls: calls, dw: Object.assign({}, dw),
+      write: [], src: -1, cmpL: -1, cmpR: -1, Lhi: -1, Rhi: -1, copyL: -1, copyR: -1
+    };
+    for (var q in ex) s[q] = ex[q];
+    steps.push(s);
+  }
+  var Y = "y", N = "n";
+  function ms(l, r, d) {
+    calls++;
+    var f = { type: "ms", l: l, r: r, mid: null, wait: "", key: l + "-" + r };
+    stack.push(f);
+    snap("call", [0], "mergeSort(a, " + l + ", " + r + ") çağrıldı. Bu çağrı a[" + l + "…" + r + "] aralığını sıralamakla görevli (" + (r - l + 1) + " eleman). Çağrı yığınına yeni bir çerçeve eklendi: left = " + l + ", right = " + r + ".", { 0: ["left = " + l + ", right = " + r] });
+    if (l < r) {
+      snap("if", [1], "if koşulu: left < right mı? " + l + " < " + r + " → Evet. Aralıkta birden fazla eleman var, bölünmesi gerekir; if gövdesine girilir.", { 1: ["left < right ?  " + l + " < " + r + "  Evet", Y] });
+      var m = Math.floor((l + r) / 2);
+      f.mid = m;
+      snap("mid", [2], "mid = (left + right) / 2 = (" + l + " + " + r + ") / 2 = " + m + " (tamsayı bölme). Sol yarı a[" + l + "…" + m + "], sağ yarı a[" + (m + 1) + "…" + r + "].", { 2: ["mid = (" + l + " + " + r + ") / 2 = " + m] });
+      f.wait = "sol yarıyı bekliyor";
+      snap("callL", [3], "Sol yarı için mergeSort(a, " + l + ", " + m + ") çağrılıyor. Bu çağrı dönene kadar bu çerçeve 4. satırda bekler.", { 3: ["mergeSort(a, " + l + ", " + m + ")  → sol yarı"] });
+      ms(l, m, d + 1);
+      f.wait = "sağ yarıyı bekliyor";
+      snap("callR", [4], "Sol yarı sıralandı: a[" + l + "…" + m + "] = " + rng(l, m) + ". Şimdi sağ yarı için mergeSort(a, " + (m + 1) + ", " + r + ") çağrılıyor.", { 4: ["mergeSort(a, " + (m + 1) + ", " + r + ")  → sağ yarı"] });
+      ms(m + 1, r, d + 1);
+      f.wait = "merge'ü bekliyor";
+      snap("callM", [5], "İki yarı da sıralı: " + rng(l, m) + " ve " + rng(m + 1, r) + ". merge(a, " + l + ", " + m + ", " + r + ") bu iki sıralı parçayı tek sıralı parçaya birleştirecek.", { 5: ["merge(a, " + l + ", " + m + ", " + r + ")"] });
+      merge(l, m, r, d);
+      f.wait = "";
+      done[f.key] = true;
+      snap("ret", [6, 7], "mergeSort(a, " + l + ", " + r + ") bitti: a[" + l + "…" + r + "] = " + rng(l, r) + " sıralı. Fonksiyonun sonuna gelindi, çağırana dönülür ve çerçeve yığından çıkar.", { 7: ["return → çağırana dön"] });
+      stack.pop();
+    } else {
+      snap("if", [1], "if koşulu: left < right mı? " + l + " < " + r + " → Hayır (iki sınır eşit). Aralıkta tek eleman var: " + lab(a[l]) + ". Tek eleman zaten sıralıdır, if gövdesine girilmez.", { 1: ["left < right ?  " + l + " < " + r + "  Hayır", N] });
+      done[f.key] = true;
+      snap("base", [6, 7], "if atlandı, fonksiyonun sonuna gelindi. Hiçbir şey yapılmadan çağırana dönülür. Bu en alt seviyedir (taban durum): a[" + l + "] = " + lab(a[l]) + " tek başına sıralı sayılır.", { 7: ["return → çağırana dön"] });
+      stack.pop();
+    }
+  }
+  function merge(l, m, r, d) {
+    merges++; mc = 0; mw = 0;
+    var fr = { type: "merge", l: l, r: r, mid: m, wait: "", key: l + "-" + r };
+    stack.push(fr);
+    var n1 = m - l + 1, n2 = r - m;
+    M = { l: l, mid: m, r: r, n1: null, n2: null, L: [], R: [], i: null, j: null, k: null, d: d, loop: "" };
+    snap("mcall", [9], "merge(a, " + l + ", " + m + ", " + r + ") çağrıldı. Elimizde iki sıralı parça var: sol a[" + l + "…" + m + "] = " + rng(l, m) + ", sağ a[" + (m + 1) + "…" + r + "] = " + rng(m + 1, r) + ". Bunları tek sıralı parçada birleştireceğiz.", { 9: ["left = " + l + ", mid = " + m + ", right = " + r] });
+    M.n1 = n1;
+    snap("n1", [10], "n1 = mid − left + 1 = " + m + " − " + l + " + 1 = " + n1 + ". Sol parçanın eleman sayısı.", { 10: ["n1 = " + m + " − " + l + " + 1 = " + n1] });
+    M.n2 = n2;
+    snap("n2", [11], "n2 = right − mid = " + r + " − " + m + " = " + n2 + ". Sağ parçanın eleman sayısı.", { 11: ["n2 = " + r + " − " + m + " = " + n2] });
+    for (var q = 0; q < n1; q++) M.L.push(null);
+    for (q = 0; q < n2; q++) M.R.push(null);
+    snap("alloc", [12], "Geçici diziler L[" + n1 + "] ve R[" + n2 + "] oluşturuldu (şimdilik boş). Sıralı parçaların kopyası buraya alınır. Böylece a'ya yazarken henüz okunmamış değerler ezilip kaybolmaz.", { 12: ["L[" + n1 + "], R[" + n2 + "] boş dizi"] });
+    var x, y;
+    for (x = 0; x < n1; x++) {
+      M.L[x] = cp(a[l + x]);
+      snap("copyL", [13, 14], "x = " + x + ": x < n1 doğru. L[" + x + "] = a[left + " + x + "] = a[" + (l + x) + "] = " + lab(a[l + x]) + ". Sol parçanın " + (x + 1) + ". elemanı L'ye kopyalandı.", { 13: ["x < n1 ?  " + x + " < " + n1 + "  Evet", Y], 14: ["L[" + x + "] = a[" + l + " + " + x + "] = " + lab(a[l + x])] }, { src: l + x, copyL: x });
+    }
+    snap("copyL", [13], "x = " + n1 + ": x < n1 ? " + n1 + " < " + n1 + " → Hayır. Kopyalama bitti: L = " + "[" + M.L.map(lab).join(", ") + "].", { 13: ["x < n1 ?  " + n1 + " < " + n1 + "  Hayır", N] });
+    for (y = 0; y < n2; y++) {
+      M.R[y] = cp(a[m + 1 + y]);
+      snap("copyR", [15, 16], "y = " + y + ": y < n2 doğru. R[" + y + "] = a[mid + 1 + " + y + "] = a[" + (m + 1 + y) + "] = " + lab(a[m + 1 + y]) + ". Sağ parçanın " + (y + 1) + ". elemanı R'ye kopyalandı.", { 15: ["y < n2 ?  " + y + " < " + n2 + "  Evet", Y], 16: ["R[" + y + "] = a[" + (m + 1) + " + " + y + "] = " + lab(a[m + 1 + y])] }, { src: m + 1 + y, copyR: y });
+    }
+    snap("copyR", [15], "y = " + n2 + ": y < n2 ? " + n2 + " < " + n2 + " → Hayır. Kopyalama bitti: R = [" + M.R.map(lab).join(", ") + "].", { 15: ["y < n2 ?  " + n2 + " < " + n2 + "  Hayır", N] });
+    M.i = 0; M.j = 0; M.k = l;
+    snap("init", [17], "i = 0 (L'de okuma konumu), j = 0 (R'de okuma konumu), k = left = " + l + " (a'ya yazma konumu). İki sıralı kuyruğun başındaki elemanlar karşılaştırılacak, küçük olan a[k]'ya yazılacak.", { 17: ["i = 0, j = 0, k = " + l] });
+    function put(side) {
+      var src = side === "L" ? M.L[M.i] : M.R[M.j];
+      var lineW = side === "L" ? 20 : 23, lineI = side === "L" ? 21 : 24;
+      var idxS = side === "L" ? M.i : M.j;
+      var nm = side + "[" + (side === "L" ? "i" : "j") + "]";
+      a[M.k] = cp(src); writes++; mw++; dw[d] = (dw[d] || 0) + 1;
+      var nw = {}; nw[lineW] = ["a[" + M.k + "] = " + nm + " = " + lab(src)];
+      var ex = { write: [M.k] }; ex[side === "L" ? "Lhi" : "Rhi"] = idxS;
+      snap("write", [lineW], "a[k] = " + nm + ": a[" + M.k + "] = " + side + "[" + idxS + "] = " + lab(src) + ". Değer a'ya yazıldı: a[" + l + "…" + r + "] şu an " + rng(l, r) + ".", nw, ex);
+      if (side === "L") M.i++; else M.j++;
+      var ni = {}; ni[lineI] = [(side === "L" ? "i" : "j") + " = " + (side === "L" ? M.i : M.j)];
+      ex = {}; ex[side === "L" ? "Lhi" : "Rhi"] = -1;
+      snap("inc", [lineI], (side === "L" ? "i" : "j") + "++: " + (side === "L" ? "i = " + M.i + ". L'de" : "j = " + M.j + ". R'de") + " bir sonraki elemana geçildi; " + lab(src) + " artık alınmış sayılır.", ni);
+      M.k++;
+      snap("inck", [26], "k++: k = " + M.k + ". a'da bir sonraki hücreye geçildi.", { 26: ["k = " + M.k] });
+    }
+    M.loop = "main";
+    while (true) {
+      var c1 = M.i < n1, c2 = M.j < n2, tx, nt;
+      if (c1 && c2) {
+        tx = "while koşulu: i < n1 && j < n2 → i < n1: " + M.i + " < " + n1 + " Evet, j < n2: " + M.j + " < " + n2 + " Evet. İki kuyrukta da eleman var, karşılaştırmaya girilir.";
+        nt = "i < n1 ?  " + M.i + " < " + n1 + "  Evet   &&   j < n2 ?  " + M.j + " < " + n2 + "  Evet";
+      } else if (!c1) {
+        tx = "while koşulu: i < n1 ? " + M.i + " < " + n1 + " → Hayır. L tükendi. && operatöründe soldaki yanlış olduğu için j < n2'ye bakılmaz. Döngü biter; R'de kalan eleman varsa sonraki döngüler onu taşır.";
+        nt = "i < n1 ?  " + M.i + " < " + n1 + "  Hayır  (j < n2'ye bakılmaz)";
+      } else {
+        tx = "while koşulu: i < n1 && j < n2 → i < n1: " + M.i + " < " + n1 + " Evet, j < n2: " + M.j + " < " + n2 + " Hayır. R tükendi. Döngü biter; L'de kalan elemanlar sonraki döngüyle taşınacak.";
+        nt = "i < n1 ?  " + M.i + " < " + n1 + "  Evet   &&   j < n2 ?  " + M.j + " < " + n2 + "  Hayır";
+      }
+      snap("wcond", [18], tx, { 18: [nt, c1 && c2 ? Y : N] });
+      if (!(c1 && c2)) break;
+      comps++; mc++;
+      var Lv = M.L[M.i], Rv = M.R[M.j], le = Lv.v <= Rv.v;
+      var txt = "if koşulu: L[i] <= R[j] mi? L[" + M.i + "] = " + lab(Lv) + " <= R[" + M.j + "] = " + lab(Rv) + " → " + (le ? "Evet" : "Hayır") + ". ";
+      if (le) txt += (Lv.v === Rv.v ? "Değerler eşit; <= olduğu için soldaki (L) alınır, böylece eşit elemanların sırası bozulmaz (kararlılık). " : lab(Lv) + " daha küçük: ") + "a[k]'ya L[i] yazılacak.";
+      else txt += lab(Rv) + " kesin olarak daha küçük: a[k]'ya R[j] yazılacak (else dalı).";
+      txt += " Bu " + comps + ". karşılaştırma.";
+      snap("cmp", [19], txt, { 19: ["L[i] <= R[j] ?  " + lab(Lv) + " <= " + lab(Rv) + "  " + (le ? "Evet" : "Hayır"), le ? Y : N] }, { cmpL: M.i, cmpR: M.j });
+      put(le ? "L" : "R");
+    }
+    M.loop = "left";
+    while (true) {
+      var cL = M.i < n1;
+      snap("wL", [28], cL ? "while (i < n1): " + M.i + " < " + n1 + " → Evet. R tükendi ama L'de eleman kaldı. Kalanlar zaten sıralı ve hepsi büyük olduğundan karşılaştırmadan sırayla a'ya taşınır." : "while (i < n1): " + M.i + " < " + n1 + " → Hayır. L'de kalan eleman yok.", { 28: ["i < n1 ?  " + M.i + " < " + n1 + "  " + (cL ? "Evet" : "Hayır"), cL ? Y : N] });
+      if (!cL) break;
+      var sv = M.L[M.i];
+      a[M.k] = cp(sv); writes++; mw++; dw[d] = (dw[d] || 0) + 1;
+      snap("write", [29], "a[k] = L[i]: a[" + M.k + "] = L[" + M.i + "] = " + lab(sv) + ". Karşılaştırma yapılmadı.", { 29: ["a[" + M.k + "] = L[" + M.i + "] = " + lab(sv)] }, { write: [M.k], Lhi: M.i });
+      M.i++;
+      snap("inc", [30], "i++: i = " + M.i + ".", { 30: ["i = " + M.i] });
+      M.k++;
+      snap("inck", [31], "k++: k = " + M.k + ".", { 31: ["k = " + M.k] });
+    }
+    M.loop = "right";
+    while (true) {
+      var cR = M.j < n2;
+      snap("wR", [33], cR ? "while (j < n2): " + M.j + " < " + n2 + " → Evet. L tükendi ama R'de eleman kaldı; kalanlar karşılaştırmadan a'ya taşınır." : "while (j < n2): " + M.j + " < " + n2 + " → Hayır. R'de kalan eleman yok.", { 33: ["j < n2 ?  " + M.j + " < " + n2 + "  " + (cR ? "Evet" : "Hayır"), cR ? Y : N] });
+      if (!cR) break;
+      var sv2 = M.R[M.j];
+      a[M.k] = cp(sv2); writes++; mw++; dw[d] = (dw[d] || 0) + 1;
+      snap("write", [34], "a[k] = R[j]: a[" + M.k + "] = R[" + M.j + "] = " + lab(sv2) + ". Karşılaştırma yapılmadı.", { 34: ["a[" + M.k + "] = R[" + M.j + "] = " + lab(sv2)] }, { write: [M.k], Rhi: M.j });
+      M.j++;
+      snap("inc", [35], "j++: j = " + M.j + ".", { 35: ["j = " + M.j] });
+      M.k++;
+      snap("inck", [36], "k++: k = " + M.k + ".", { 36: ["k = " + M.k] });
+    }
+    M.loop = "end";
+    snap("mend", [37], "merge bitti: a[" + l + "…" + r + "] = " + rng(l, r) + " sıralı. Bu merge'de " + mc + " karşılaştırma ve " + mw + " yazma yapıldı (" + (r - l + 1) + " elemanın hepsi tam bir kez yazıldı). merge çerçevesi yığından çıkar, çağıran mergeSort devam eder.", { 37: ["return → mergeSort'a dön"] });
+    stack.pop();
+    M = null;
+  }
+  snap("start", [], "Başlangıç dizisi: " + rng(0, n - 1) + ". İlk çağrı mergeSort(a, 0, " + (n - 1) + ") olacak. İleri düğmesiyle başla.", {});
+  ms(0, n - 1, 0);
+  snap("final", [], "Dizi sıralandı: " + rng(0, n - 1) + ". Toplam " + calls + " mergeSort çağrısı (2n − 1 = " + (2 * n - 1) + "), " + merges + " merge (n − 1 = " + (n - 1) + "), " + comps + " karşılaştırma ve " + writes + " yazma.", {});
+  return { init: init0, steps: steps, nodes: nodes, maxD: maxD, depths: depths, n: n };
+}
+
+var S = null, steps = [], cur = 0, timer = null, codeRows = [], N = 0;
+function buildCode() {
+  var el = $("code"); el.innerHTML = ""; codeRows = [];
+  CODE.forEach(function (txt, i) {
+    var row = document.createElement("div"); row.className = "cl";
+    var no = document.createElement("span"); no.className = "no"; no.textContent = i + 1;
+    var tx = document.createElement("span"); tx.textContent = txt;
+    row.appendChild(no); row.appendChild(tx); el.appendChild(row); codeRows.push(row);
+  });
+}
+function tile(x, cls, ix, mk, small) {
+  var d = document.createElement("div");
+  d.className = "tile" + (small ? " sm" : "") + (cls ? " " + cls : "");
+  d.innerHTML = "<div class=\"box\">" + (x ? x.v + (x.t ? "<small class=\"t" + x.t + "\">" + x.t + "</small>" : "") : "·") + "</div><div class=\"ix\">[" + ix + "]</div><div class=\"mk\">" + (mk || "") + "</div>";
+  return d;
+}
+function load(vals) {
+  stop();
+  S = sim(mkArr(vals)); steps = S.steps; N = S.n; cur = 0;
+  buildCode();
+  $("slider").max = steps.length - 1;
+  [["tree", "tn", "eg1"], ["tree2", "mn", "eg2"]].forEach(function (cfg) {
+    var t = $(cfg[0]); t.innerHTML = "";
+    t.style.gridTemplateColumns = "repeat(" + N + ", minmax(36px, 1fr))";
+    t.style.minWidth = (N * 40) + "px";
+    S.nodes.forEach(function (nd) {
+      var d = document.createElement("div");
+      d.className = cfg[1] + " unseen"; d.id = cfg[1] + "-" + nd.key;
+      d.style.gridColumn = (nd.l + 1) + " / " + (nd.r + 2);
+      d.style.gridRow = cfg[1] === "tn" ? (nd.d + 1) : (S.maxD - nd.d + 1);
+      t.appendChild(d);
+    });
+  });
+  render();
+}
+function render() {
+  var s = steps[cur], top = s.stack.length ? s.stack[s.stack.length - 1] : null;
+  codeRows.forEach(function (r, i) {
+    r.className = "cl" + (s.lines.indexOf(i) >= 0 ? " on" : "");
+    var old = r.querySelector(".note"); if (old) r.removeChild(old);
+    var nt = s.note && s.note[i];
+    if (nt && s.lines.indexOf(i) >= 0) {
+      var sp = document.createElement("span"); sp.className = "note" + (nt[1] ? " " + nt[1] : ""); sp.textContent = "// " + nt[0]; r.appendChild(sp);
+    }
+  });
+  var first = null; for (var q = 0; q < codeRows.length; q++) if (s.lines.indexOf(q) >= 0) { first = codeRows[q]; break; }
+  if (first) { var c = $("code"); c.scrollTop = Math.max(0, first.offsetTop - c.clientHeight / 2 + first.offsetHeight / 2); }
+  else $("code").scrollTop = 0;
+  var where = !top ? "" : top.type === "merge" ? "merge(a, " + top.l + ", " + top.mid + ", " + top.r + ")" : "mergeSort(a, " + top.l + ", " + top.r + ")";
+  $("running").innerHTML = s.kind === "final" ? "Algoritma bitti." : top ? "Şu an çalışan: <b>" + where + "</b>, yığın derinliği " + s.stack.length : "Henüz çağrı yapılmadı.";
+  $("stepno").textContent = "Adım " + (cur + 1) + " / " + steps.length;
+  $("explain").textContent = s.text;
+  $("slider").value = cur; $("pos").textContent = (cur + 1) + "/" + steps.length;
+
+  // ana dizi
+  var lo = -1, hi = -1, marks = {};
+  function addm(i, t) { if (i >= 0 && i < N) marks[i] = (marks[i] ? marks[i] + " " : "") + t; }
+  if (top) { lo = top.l; hi = top.r; addm(top.l, "l"); if (top.mid !== null && top.mid !== undefined) addm(top.mid, "m"); addm(top.r, "r"); }
+  if (s.M && s.M.k !== null && s.M.loop && s.M.k <= s.M.r && s.M.loop !== "") addm(s.M.k, "k");
+  var arr = $("arr"); arr.innerHTML = "";
+  s.arr.forEach(function (x, idx) {
+    var cls = [];
+    if (s.kind === "final") cls.push("sorted");
+    else if (top && idx >= lo && idx <= hi) cls.push("rng");
+    else if (top) cls.push("out");
+    if (s.write.indexOf(idx) >= 0) cls.push("swapped");
+    if (idx === s.src) cls.push("isj");
+    arr.appendChild(tile(x, cls.join(" "), idx, marks[idx] || ""));
+  });
+  // L ve R
+  var m = s.M;
+  $("rowL").hidden = !m; $("rowR").hidden = !m;
+  if (m) {
+    var aL = $("arrL"); aL.innerHTML = "";
+    m.L.forEach(function (x, idx) {
+      var cls = [];
+      if (!x) cls.push("empty");
+      if (m.i !== null && m.loop && idx < m.i) cls.push("gone");
+      if (idx === s.cmpL) cls.push("isj");
+      if (idx === s.Lhi || idx === s.copyL) cls.push("swapped");
+      aL.appendChild(tile(x, cls.join(" "), idx, (m.loop && idx === m.i && m.loop !== "end") ? "i" : "", true));
+    });
+    var aR = $("arrR"); aR.innerHTML = "";
+    m.R.forEach(function (x, idx) {
+      var cls = [];
+      if (!x) cls.push("empty");
+      if (m.j !== null && m.loop && idx < m.j) cls.push("gone");
+      if (idx === s.cmpR) cls.push("isj");
+      if (idx === s.Rhi || idx === s.copyR) cls.push("swapped");
+      aR.appendChild(tile(x, cls.join(" "), idx, (m.loop && idx === m.j && m.loop !== "end") ? "j" : "", true));
+    });
+    $("mnote").textContent = "L ve R, merge çağrısı sırasında açılan geçici kopyalardır; a'ya yazılan değerler buradan okunur.";
+  } else {
+    $("mnote").textContent = "merge çalışmıyor. L ve R geçici dizileri merge çağrısı sırasında burada görünür.";
+  }
+  // değişkenler
+  var v = {};
+  if (top && top.type === "ms") { v.left = top.l; v.right = top.r; v.mid = top.mid; }
+  if (m) { v.left = m.l; v.mid = m.mid; v.right = m.r; v.n1 = m.n1; v.n2 = m.n2; if (m.loop) { v.i = m.i; v.j = m.j; v.k = m.k; } }
+  var vc = $("vars"); vc.innerHTML = "";
+  ["left", "right", "mid", "n1", "n2", "i", "j", "k"].forEach(function (nm) {
+    var val = v[nm], sp = document.createElement("span");
+    sp.className = "chip v" + (val === undefined || val === null ? " na" : "");
+    sp.textContent = nm + " = " + (val === undefined || val === null ? "–" : val);
+    vc.appendChild(sp);
+  });
+  // yığın
+  var st = $("stack"); st.innerHTML = "";
+  if (!s.stack.length) { st.innerHTML = "<p class=\"empty\">Yığın boş.</p>"; }
+  s.stack.forEach(function (f, i) {
+    var isTop = i === s.stack.length - 1;
+    var d = document.createElement("div");
+    d.className = "frame" + (f.type === "merge" ? " mg" : "") + (isTop ? " top" : "");
+    var name = f.type === "merge" ? "merge(a, " + f.l + ", " + f.mid + ", " + f.r + ")" : "mergeSort(a, " + f.l + ", " + f.r + ")";
+    var info = isTop ? "çalışıyor" : (f.wait || "");
+    d.innerHTML = "<code>" + name + "</code><span class=\"st\">" + (f.type === "ms" && f.mid !== null ? "mid = " + f.mid + " · " : "") + info + "</span>";
+    st.appendChild(d);
+  });
+  // ağaç
+  var topKey = top ? top.key : null, topType = top ? top.type : null;
+  var open = {}, split = {}; s.stack.forEach(function (f) { if (f.type === "ms") { open[f.key] = true; if (f.mid !== null) split[f.key] = f.mid; } });
+  var merging = {}; s.stack.forEach(function (f) { if (f.type === "merge") merging[f.key] = true; });
+  function boxes(vals, extra) { return vals.map(function (x) { return "<span class=\"cb" + (x === null ? " ph" : "") + "\">" + (x === null ? "·" : x) + "</span>"; }).join(""); }
+  var stOf = {};
+  S.nodes.forEach(function (nd) {
+    var state;
+    if (s.done[nd.key]) state = "done";
+    else if (merging[nd.key]) state = "merging";
+    else if (open[nd.key]) state = (topType === "ms" && topKey === nd.key) ? "cur" : "active";
+    else state = "unseen";
+    stOf[nd.key] = state;
+    // bölme ağacı
+    var el = $("tn-" + nd.key), seen = state !== "unseen";
+    el.className = "tn " + (state === "done" || state === "merging" ? "seen" : state);
+    var lbl = nd.l === nd.r ? "[" + nd.l + "]" : "[" + nd.l + "…" + nd.r + "]";
+    var html = "<small>" + lbl + "</small><div class=\"vs\">";
+    if (!seen) html += boxes(S.init.slice(nd.l, nd.r + 1).map(function () { return null; }));
+    else {
+      var sp = (split[nd.key] !== undefined) ? split[nd.key] : (nd.l < nd.r && (state === "done" || state === "merging") ? Math.floor((nd.l + nd.r) / 2) : null);
+      for (var q = nd.l; q <= nd.r; q++) {
+        html += "<span class=\"cb\">" + lab(S.init[q]) + "</span>";
+        if (sp !== null && q === sp) html += "<i class=\"spl\"></i>";
+      }
+    }
+    el.innerHTML = html + "</div>";
+    // birleştirme ağacı
+    var el2 = $("mn-" + nd.key), vals = [];
+    var ms2 = state === "merging" ? "merging" : state === "done" ? "done" : "wait";
+    var kk = (s.M && merging[nd.key] && s.M.k !== null) ? s.M.k : nd.l;
+    for (q = nd.l; q <= nd.r; q++) vals.push(ms2 === "done" ? lab(s.arr[q]) : (ms2 === "merging" && q < kk ? lab(s.arr[q]) : null));
+    el2.className = "mn " + ms2;
+    el2.innerHTML = "<small>" + lbl + "</small><div class=\"vs\">" + boxes(vals) + "</div>";
+  });
+  function edges(cid, svgid, pref, up) {
+    var grid = $(cid), svg = $(svgid), w = grid.scrollWidth, h = grid.scrollHeight, out = "";
+    svg.setAttribute("width", w); svg.setAttribute("height", h); svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+    S.nodes.forEach(function (nd) {
+      if (!nd.p) return;
+      var live = up ? stOf[nd.key] === "done" : stOf[nd.key] !== "unseen";
+      if (!live) return;
+      var c = $(pref + "-" + nd.key), pa = $(pref + "-" + nd.p);
+      var cx = c.offsetLeft + c.offsetWidth / 2, px = pa.offsetLeft + pa.offsetWidth / 2;
+      var cy, py;
+      if (up) { cy = c.offsetTop + c.offsetHeight; py = pa.offsetTop; } else { cy = c.offsetTop; py = pa.offsetTop + pa.offsetHeight; }
+      var hot = up ? stOf[nd.p] === "merging" : stOf[nd.key] === "cur";
+      out += "<path d=\"M" + px + " " + py + " C" + px + " " + ((py + cy) / 2) + " " + cx + " " + ((py + cy) / 2) + " " + cx + " " + cy + "\" class=\"" + (hot ? "hot" : "") + "\"/>";
+    });
+    svg.innerHTML = out;
+  }
+  edges("tree", "eg1", "tn", false);
+  edges("tree2", "eg2", "mn", true);
+  // sayaçlar
+  $("s-cmp").textContent = s.comps; $("s-wr").textContent = s.writes; $("s-mg").textContent = s.merges; $("s-ms").textContent = s.calls;
+  // seviyeler
+  var lv = $("levels"); lv.innerHTML = "";
+  S.depths.forEach(function (d) {
+    var w = s.dw[d] || 0, row = document.createElement("div");
+    row.className = "lv";
+    row.innerHTML = "<span>Seviye " + d + "</span><div class=\"bar\"><i style=\"width:" + Math.min(100, w / N * 100) + "%\"></i></div><span class=\"v\">" + w + " / " + N + "</span>";
+    lv.appendChild(row);
+  });
+  var levels = Math.ceil(Math.log2(N));
+  $("sum").innerHTML = "Her seviyede en fazla <b>n = " + N + "</b> yazma yapılır. Seviye sayısı <b>⌈log₂ " + N + "⌉ = " + levels + "</b>, bu yüzden en çok <b>" + (N * levels) + "</b> yazma. Şu ana kadar: <b>" + s.writes + "</b>. Toplam iş <b>n · log n</b> ile orantılıdır.";
+  // butonlar
+  var atEnd = cur === steps.length - 1;
+  $("prev").disabled = cur === 0; $("reset").disabled = cur === 0; $("next").disabled = atEnd;
+  $("skipcall").disabled = atEnd; $("skipcmp").disabled = atEnd; $("skipmerge").disabled = !s.M;
+}
+function go(i) { cur = Math.max(0, Math.min(steps.length - 1, i)); render(); }
+function stop() { if (timer) { clearInterval(timer); timer = null; } $("play").textContent = "▶ Oynat"; }
+function play() {
+  if (timer) { stop(); return; }
+  if (cur === steps.length - 1) go(0);
+  $("play").textContent = "❚❚ Duraklat";
+  timer = setInterval(function () { if (cur >= steps.length - 1) { stop(); return; } go(cur + 1); }, parseInt($("speed").value, 10));
+}
+function findNext(pred) { var j = cur + 1; while (j < steps.length - 1 && !pred(steps[j])) j++; return j; }
+$("next").onclick = function () { stop(); go(cur + 1); };
+$("prev").onclick = function () { stop(); go(cur - 1); };
+$("reset").onclick = function () { stop(); go(0); };
+$("play").onclick = play;
+$("skipcall").onclick = function () { stop(); go(findNext(function (x) { return x.kind === "call"; })); };
+$("skipcmp").onclick = function () { stop(); go(findNext(function (x) { return x.kind === "cmp"; })); };
+$("skipmerge").onclick = function () { stop(); go(findNext(function (x) { return x.kind === "mend"; })); };
+$("speed").onchange = function () { if (timer) { stop(); play(); } };
+$("slider").oninput = function () { stop(); go(parseInt($("slider").value, 10)); };
+document.querySelectorAll("#seg button").forEach(function (b) {
+  b.onclick = function () {
+    document.querySelectorAll("#seg button").forEach(function (o) { o.setAttribute("aria-selected", o === b ? "true" : "false"); });
+    $("err").hidden = true;
+    load(b.dataset.a.split(",").map(Number));
+  };
+});
+$("customform").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var parts = $("cin").value.split(/[\s,;]+/).filter(function (x) { return x !== ""; });
+  var nums = parts.map(Number);
+  var bad = nums.some(function (x) { return !isFinite(x) || Math.floor(x) !== x || x < -99 || x > 999; });
+  var err = $("err");
+  if (nums.length < 2 || nums.length > 8 || bad) {
+    err.textContent = "2 ile 8 arasında, virgülle ayrılmış tam sayı gir (−99 ile 999 arası). Örnek: 8, 3, 6, 1, 5, 2";
+    err.hidden = false; return;
+  }
+  err.hidden = true;
+  document.querySelectorAll("#seg button").forEach(function (o) { o.setAttribute("aria-selected", "false"); });
+  load(nums);
+});
+document.addEventListener("keydown", function (e) {
+  var t = e.target && e.target.tagName;
+  if (t === "SELECT" || t === "INPUT") return;
+  if (e.key === "ArrowRight") { e.preventDefault(); stop(); go(cur + 1); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); stop(); go(cur - 1); }
+});
+load([12, 4, 9, 2, 7]);
+})();
+</script>
+
+</body></html>

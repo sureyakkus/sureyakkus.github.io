@@ -1,0 +1,415 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Özyineleme ve T(n)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: tek sütun çalışma sayfası. Üstte yöntem, sekmeler F1–F4; her sekme: kod + formül parçaları, çalıştırma ağacı, seviye tablosu, Master kontrolü, sayısal doğrulama. */
+:root {
+  --bg: #F2F5F9;
+  --surface: #FFFFFF;
+  --surface2: #E9EEF5;
+  --ink: #14202E;
+  --muted: #566577;
+  --line: #D3DAE4;
+  --accent: #1F5FBF;
+  --pa: #7A3FC2;      /* a: çağrı sayısı */
+  --pb: #0B7A75;      /* b: bölme oranı */
+  --pf: #A85A00;      /* f(n): çağrı dışı iş */
+  --pbase: #566577;   /* taban durumu */
+  --l0: #2B59C3; --l1: #12877A; --l2: #B07A00; --l3: #A63D8F; --l4: #6B7A8F;
+  --on-lv: #FFFFFF;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1620; --surface: #18212D; --surface2: #202C3A; --ink: #E6EBF2; --muted: #9AA8B8; --line: #2C3949; --accent: #6EA0FF;
+    --pa: #B88CFF; --pb: #4FD1C5; --pf: #F0B44C; --pbase: #9AA8B8;
+    --l0: #6EA0FF; --l1: #4FD1C5; --l2: #F0B44C; --l3: #E58AD0; --l4: #9AA8B8; --on-lv: #0E1620;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1620; --surface: #18212D; --surface2: #202C3A; --ink: #E6EBF2; --muted: #9AA8B8; --line: #2C3949; --accent: #6EA0FF;
+  --pa: #B88CFF; --pb: #4FD1C5; --pf: #F0B44C; --pbase: #9AA8B8;
+  --l0: #6EA0FF; --l1: #4FD1C5; --l2: #F0B44C; --l3: #E58AD0; --l4: #9AA8B8; --on-lv: #0E1620;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(1.7rem, 4.6vw, 2.35rem); letter-spacing: -0.01em; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1.02rem; }
+p { margin: 0; }
+.lead { color: var(--muted); max-width: 62ch; margin-top: 8px; }
+code, .mono { font-family: var(--f-mono); font-size: 0.92em; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+
+/* yöntem */
+.method { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.q { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface2); }
+.q b { font-family: var(--f-mono); font-size: 1.05rem; }
+.q.a b { color: var(--pa); } .q.b b { color: var(--pb); } .q.f b { color: var(--pf); }
+.q span { display: block; font-size: 0.93rem; }
+.eq { font-family: var(--f-mono); font-size: 1.05rem; }
+.note { color: var(--muted); font-size: 0.93rem; }
+
+/* sekmeler */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { font: inherit; font-family: var(--f-display); font-weight: 700; font-size: 1rem; padding: 8px 18px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tab small { font-family: var(--f-body); font-weight: 400; opacity: 0.8; margin-left: 6px; }
+button:focus-visible, .tab:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* kod + parçalar */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.codebox { background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 0; overflow-x: auto; }
+.ln { display: flex; font-family: var(--f-mono); font-size: 0.9rem; line-height: 1.7; padding: 0 12px; white-space: pre; }
+.ln .no { color: var(--muted); width: 2ch; margin-right: 12px; text-align: right; user-select: none; }
+.ln i { font-style: normal; }
+.codebox[data-sel="a"] .ln.call { background: color-mix(in srgb, var(--pa) 20%, transparent); }
+.codebox[data-sel="b"] .ln.call i.arg { background: color-mix(in srgb, var(--pb) 30%, transparent); border-radius: 3px; outline: 1px solid var(--pb); }
+.codebox[data-sel="f"] .ln.work { background: color-mix(in srgb, var(--pf) 22%, transparent); }
+.codebox[data-sel="base"] .ln.base { background: color-mix(in srgb, var(--pbase) 22%, transparent); }
+.formula { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 1.05rem; }
+.piece { font: inherit; font-family: var(--f-mono); font-weight: 600; border-radius: 6px; padding: 3px 10px; cursor: pointer; border: 2px solid transparent; color: var(--ink); background: var(--surface2); }
+.piece[data-k="a"] { color: var(--pa); } .piece[data-k="b"] { color: var(--pb); } .piece[data-k="f"] { color: var(--pf); } .piece[data-k="base"] { color: var(--pbase); }
+.piece[aria-pressed="true"] { border-color: currentColor; background: var(--surface); }
+.explain { border-left: 4px solid var(--accent); padding: 6px 0 6px 12px; }
+.explain[data-k="a"] { border-color: var(--pa); } .explain[data-k="b"] { border-color: var(--pb); } .explain[data-k="f"] { border-color: var(--pf); } .explain[data-k="base"] { border-color: var(--pbase); }
+.explain strong { display: block; }
+
+/* ağaç */
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-family: var(--f-mono); padding: 6px 12px; border: 0; border-right: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+.btn { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+.counter { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.counter .big { font-family: var(--f-mono); font-size: 2rem; font-weight: 600; line-height: 1; }
+.stepnote { min-height: 3em; color: var(--ink); }
+.treewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface2); }
+.treewrap svg { display: block; margin: 0 auto; }
+.edge { stroke: var(--line); stroke-width: 1.6; }
+.nd circle { fill: var(--surface); stroke: var(--muted); stroke-width: 1.4; }
+.nd text { fill: var(--ink); font-family: var(--f-mono); font-size: 12px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+.nd .w { font-size: 10px; font-weight: 400; fill: var(--muted); }
+.nd.done circle { fill: var(--lv); stroke: var(--lv); }
+.nd.done text:not(.w) { fill: var(--on-lv); }
+.nd.cur circle { stroke: var(--ink); stroke-width: 3.2; }
+.nd.hl circle { stroke: var(--ink); stroke-width: 3; stroke-dasharray: 3 2; }
+.nd:not(.done) { opacity: 0.8; }
+
+/* tablo */
+.tw { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+th { font-size: 0.88rem; font-weight: 700; color: var(--muted); }
+th:first-child, td:first-child { text-align: left; }
+tbody tr[data-level]:hover { background: var(--surface2); }
+tfoot td { font-weight: 700; border-bottom: 0; }
+.lvdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--lv); margin-right: 8px; }
+.barcell { min-width: 130px; text-align: left; }
+.bar { height: 12px; background: var(--lv); border-radius: 3px; display: inline-block; vertical-align: middle; }
+.cases { display: grid; gap: 8px; }
+.case { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+.case.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.case b { font-family: var(--f-mono); }
+.verdict { font-weight: 700; }
+.ok { color: var(--pb); font-weight: 700; }
+.sumrow { cursor: pointer; }
+.sumrow:hover { background: var(--surface2); }
+.sumrow.cur td { font-weight: 700; }
+
+@media (max-width: 720px) {
+  .method { grid-template-columns: 1fr; }
+  .two { grid-template-columns: minmax(0, 1fr); }
+  .tab small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+(function () {
+  const lg = n => Math.round(Math.log2(n));
+  const fl = n => Math.floor(n / 2);
+
+  /* ---- Dört fonksiyon: kod, iş miktarı, simülasyon, açıklamalar ---- */
+  const FUNCS = {
+    f1: {
+      tab: 'F1', short: 'iki çağrı, sabit iş',
+      code: [
+        { h: 'void f1(int n) {' },
+        { h: '    cnt++;', c: 'work' },
+        { h: '    if (n &lt;= 1) return;', c: 'base' },
+        { h: '    f1(<i class="arg">n / 2</i>);', c: 'call' },
+        { h: '    f1(<i class="arg">n / 2</i>);', c: 'call' },
+        { h: '}' }],
+      kids: 2, a: 2, b: 2, fTxt: '1', fLog: 0,
+      work: s => 1,
+      sim: function s(n) { return n <= 1 ? 1 : 1 + s(fl(n)) + s(fl(n)); },
+      closed: n => 2 * n - 1, closedTxt: '2n − 1',
+      countsWhat: 'cnt burada ÇAĞRI sayısını sayar (her çağrı cnt++ yapar).',
+      pieces: {
+        a: ['Kaç çağrı?', 'Satır 4 ve 5: f1 kendini <b>iki kez</b> çağırıyor. Bu yüzden a = 2.'],
+        b: ['Problem kaça bölünüyor?', 'İki çağrı da <code>n / 2</code> ile yapılıyor: problem her seferinde yarıya iniyor, b = 2.'],
+        f: ['Çağrı dışında ne kadar iş?', 'Çağrılar dışında tek iş satır 2’deki <code>cnt++</code>. n ne olursa olsun bir kez çalışır: f(n) = 1 (sabit).'],
+        base: ['Durma noktası', 'n ≤ 1 olunca fonksiyon durur, ama <code>cnt++</code> bundan önce çalışmıştı. Yani T(1) = 1.']
+      },
+      levelTxt: 'Seviye i’de 2ⁱ çağrı var ve her çağrı 1 iş yapıyor: 1 + 2 + 4 + … + n = 2n − 1.',
+      stepTxt: nd => `f1(${nd.size}) çağrıldı → cnt++ (+1)` + (nd.size > 1 ? ', sonra iki kez f1(' + fl(nd.size) + ') çağıracak.' : ', n ≤ 1 olduğu için hemen döner.'),
+      master: { logExp: 1, fTxt: '1 = n⁰', caseNo: 1, res: 'Θ(n)' },
+      insight: 'İki çağrı olması tek başına “n log n” demek değildir. Çağrı başına iş sabit olduğu için toplam iş = ağaçtaki düğüm sayısı ≈ 2n. İşin çoğu en alt seviyede (yapraklarda).'
+    },
+    f2: {
+      tab: 'F2', short: 'tek çağrı, n iş',
+      code: [
+        { h: 'void f2(int n) {' },
+        { h: '    if (n &lt;= 1) return;', c: 'base' },
+        { h: '    for (int i = 0; i &lt; n; i++) cnt++;', c: 'work' },
+        { h: '    f2(<i class="arg">n / 2</i>);', c: 'call' },
+        { h: '}' }],
+      kids: 1, a: 1, b: 2, fTxt: 'n', fLog: 0,
+      work: s => s > 1 ? s : 0,
+      sim: function s(n) { return n <= 1 ? 0 : n + s(fl(n)); },
+      closed: n => 2 * n - 2, closedTxt: '2n − 2',
+      countsWhat: 'cnt burada DÖNGÜ turlarını sayar.',
+      pieces: {
+        a: ['Kaç çağrı?', 'Satır 4: yalnızca <b>bir</b> özyinelemeli çağrı var. a = 1. Ağaç dallanmaz, düz bir zincir olur.'],
+        b: ['Problem kaça bölünüyor?', 'Çağrı <code>n / 2</code> ile yapılıyor: b = 2.'],
+        f: ['Çağrı dışında ne kadar iş?', 'Satır 3’teki <code>for</code> döngüsü n kez <code>cnt++</code> yapıyor: f(n) = n.'],
+        base: ['Durma noktası', 'n ≤ 1 ise fonksiyon döngüden <b>önce</b> döner, iş yapmaz: T(1) = 0. (Sabit bir fark Big-O’yu değiştirmez.)']
+      },
+      levelTxt: 'Her seviyede tek çağrı var; işler n, n/2, n/4, … diye yarıya iner: n + n/2 + … + 2 = 2n − 2.',
+      stepTxt: nd => nd.size > 1 ? `f2(${nd.size}): döngü ${nd.size} tur döndü (+${nd.size}), sonra f2(${fl(nd.size)}) çağrıldı.` : 'f2(1): n ≤ 1, döngüye girmeden döner (+0).',
+      master: { logExp: 0, fTxt: 'n', caseNo: 3, res: 'Θ(n)' },
+      insight: 'Tek çağrı olduğu için ağaç bir zincirdir ve işler geometrik azalır: toplam, ilk terimin (n) en fazla 2 katıdır. İşin çoğu en üstte (kökte) yapılır.'
+    },
+    f3: {
+      tab: 'F3', short: 'iki çağrı, n iş',
+      code: [
+        { h: 'void f3(int n) {' },
+        { h: '    if (n &lt;= 1) return;', c: 'base' },
+        { h: '    for (int i = 0; i &lt; n; i++) cnt++;', c: 'work' },
+        { h: '    f3(<i class="arg">n / 2</i>);', c: 'call' },
+        { h: '    f3(<i class="arg">n / 2</i>);', c: 'call' },
+        { h: '}' }],
+      kids: 2, a: 2, b: 2, fTxt: 'n', fLog: 0,
+      work: s => s > 1 ? s : 0,
+      sim: function s(n) { return n <= 1 ? 0 : n + 2 * s(fl(n)); },
+      closed: n => n * lg(n), closedTxt: 'n·log₂n',
+      countsWhat: 'cnt burada DÖNGÜ turlarını sayar.',
+      pieces: {
+        a: ['Kaç çağrı?', 'Satır 4 ve 5: iki özyinelemeli çağrı. a = 2.'],
+        b: ['Problem kaça bölünüyor?', 'İkisi de <code>n / 2</code>: b = 2.'],
+        f: ['Çağrı dışında ne kadar iş?', 'Satır 3’teki <code>for</code> döngüsü n kez dönüyor: f(n) = n.'],
+        base: ['Durma noktası', 'n ≤ 1 ise döngüden önce döner: T(1) = 0.']
+      },
+      levelTxt: 'Seviye i’de 2ⁱ çağrı var ve her biri n/2ⁱ iş yapıyor: çarpım her seviyede n. Seviye sayısı log₂n olduğundan toplam n·log₂n.',
+      stepTxt: nd => nd.size > 1 ? `f3(${nd.size}): döngü ${nd.size} tur döndü (+${nd.size}), sonra iki kez f3(${fl(nd.size)}) çağrıldı.` : 'f3(1): n ≤ 1, hemen döner (+0).',
+      master: { logExp: 1, fTxt: 'n', caseNo: 2, res: 'Θ(n log n)' },
+      insight: 'Ağaç şekli F1 ile aynı, ama burada çağrı başına iş n/2ⁱ. Çağrı sayısının artışı ile çağrı başına işin azalışı birbirini dengeler ve her seviye eşit (n) iş yapar. Merge Sort tam olarak bu yapıdır.'
+    },
+    f4: {
+      tab: 'F4', short: 'iki çağrı, log n iş',
+      code: [
+        { h: 'void f4(int n) {' },
+        { h: '    if (n &lt;= 1) return;', c: 'base' },
+        { h: '    for (int k = 1; k &lt; n; k *= 2) cnt++;', c: 'work' },
+        { h: '    f4(<i class="arg">n / 2</i>);', c: 'call' },
+        { h: '    f4(<i class="arg">n / 2</i>);', c: 'call' },
+        { h: '}' }],
+      kids: 2, a: 2, b: 2, fTxt: 'log n', fLog: 1,
+      work: s => s > 1 ? lg(s) : 0,
+      sim: function s(n) { if (n <= 1) return 0; let c = 0; for (let k = 1; k < n; k *= 2) c++; return c + 2 * s(fl(n)); },
+      closed: n => 2 * n - lg(n) - 2, closedTxt: '2n − log₂n − 2',
+      countsWhat: 'cnt burada DÖNGÜ turlarını sayar.',
+      pieces: {
+        a: ['Kaç çağrı?', 'Satır 4 ve 5: iki özyinelemeli çağrı. a = 2.'],
+        b: ['Problem kaça bölünüyor?', 'İkisi de <code>n / 2</code>: b = 2.'],
+        f: ['Çağrı dışında ne kadar iş?', 'Döngüde k her turda 2 ile çarpılıyor: 1, 2, 4, 8, … Bu, n’e ulaşmak için yaklaşık log₂n tur sürer. Yani f(n) = log n (n değil!).'],
+        base: ['Durma noktası', 'n ≤ 1 ise döngüden önce döner: T(1) = 0.']
+      },
+      levelTxt: 'Seviye i’de 2ⁱ çağrı var, her biri log₂(n/2ⁱ) iş yapıyor. Çağrı sayısı 2 katına çıkarken çağrı başına iş sadece 1 azalıyor, bu yüzden alt seviyeler baskın. Toplam = 2n − log₂n − 2.',
+      stepTxt: nd => nd.size > 1 ? `f4(${nd.size}): k = 1, 2, 4, … < ${nd.size} → ${lg(nd.size)} tur (+${lg(nd.size)}), sonra iki kez f4(${fl(nd.size)}) çağrıldı.` : 'f4(1): n ≤ 1, hemen döner (+0).',
+      master: { logExp: 1, fTxt: 'log n', caseNo: 1, res: 'Θ(n)' },
+      insight: 'F3’ten tek fark: çağrı başına iş n yerine log n. Çağrı sayısı n’e doğru patlarken iş çok yavaş büyüdüğü için toplam doğrusal kalır: O(n).'
+    }
+  };
+  const ORDER = ['f1', 'f2', 'f3', 'f4'];
+  const sup = e => e === 0 ? 'n⁰' : e === 1 ? 'n¹' : 'n^' + e;
+
+  /* ---- Durum ---- */
+  const S = { fn: 'f1', piece: 'a', n: 8, step: null, timer: null };
+  const app = document.getElementById('app');
+  try { const h = location.hash.replace('#', ''); if (FUNCS[h]) S.fn = h; } catch (e) {}
+
+  function buildTree(F, n) {
+    const nodes = []; let leaf = 0;
+    (function rec(size, level) {
+      const node = { size, level, kids: [], order: nodes.length, w: F.work(size) };
+      nodes.push(node);
+      if (size > 1) for (let i = 0; i < F.kids; i++) node.kids.push(rec(fl(size), level + 1));
+      node.x = node.kids.length ? node.kids.reduce((s, k) => s + k.x, 0) / node.kids.length : leaf++;
+      return node;
+    })(n, 0);
+    return { nodes, leaves: leaf };
+  }
+
+  function treeSVG(F, T, step) {
+    const dx = 42, dy = 66, mx = 30, top = 28;
+    const W = Math.max(280, T.leaves * dx + 2 * mx), x0 = (W - (T.leaves - 1) * dx) / 2;
+    const maxL = Math.max(...T.nodes.map(n => n.level));
+    const H = top + maxL * dy + 52;
+    const px = n => x0 + n.x * dx, py = n => top + n.level * dy;
+    let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Özyineleme ağacı">`;
+    T.nodes.forEach(p => p.kids.forEach(k => { s += `<line class="edge" x1="${px(p)}" y1="${py(p)}" x2="${px(k)}" y2="${py(k)}"/>`; }));
+    T.nodes.forEach(n => {
+      const done = n.order < step, cur = n.order === step - 1;
+      s += `<g class="nd${done ? ' done' : ''}${cur ? ' cur' : ''}" data-level="${n.level}" style="--lv:var(--l${Math.min(n.level, 4)})">` +
+        `<circle cx="${px(n)}" cy="${py(n)}" r="15"/><text x="${px(n)}" y="${py(n)}">${n.size}</text>` +
+        `<text class="w" x="${px(n)}" y="${py(n) + 26}">+${n.w}</text></g>`;
+    });
+    return s + '</svg>';
+  }
+
+  function levelRows(F, n) {
+    const L = lg(n), rows = []; let total = 0, max = 0;
+    for (let i = 0; i <= L; i++) {
+      const calls = Math.pow(F.kids, i), size = n / Math.pow(2, i), per = F.work(size), sum = calls * per;
+      rows.push({ i, calls, size, per, sum }); total += sum; max = Math.max(max, sum);
+    }
+    return { rows, total, max };
+  }
+
+  function render() {
+    const F = FUNCS[S.fn], T = buildTree(F, S.n), N = T.nodes.length;
+    if (S.step === null || S.step > N) S.step = N;
+    const cnt = T.nodes.slice(0, S.step).reduce((s, n) => s + n.w, 0);
+    const cur = S.step > 0 ? T.nodes[S.step - 1] : null;
+    const LR = levelRows(F, S.n);
+    const [pq, pt] = F.pieces[S.piece];
+    const m = F.master, logA = m.logExp;
+
+    let h = '';
+    h += `<header><div class="eyebrow">BIL231 · Lab 4 · Soru IV</div><h1>Özyinelemede T(n) nereden gelir?</h1>
+      <p class="lead">Dört fonksiyonun her biri için aynı yolu izle: kodu oku, üç soruyu sor, T(n)’yi yaz, sonra ağaçta sayarak doğrula.</p></header>`;
+
+    h += `<section class="card"><h2>Üç soru, tek formül</h2>
+      <div class="method">
+        <div class="q a"><b>a</b><span>Fonksiyon kendini <b>kaç kez</b> çağırıyor?</span></div>
+        <div class="q b"><b>b</b><span>Her çağrıda n <b>kaça bölünüyor</b>? (n / b)</span></div>
+        <div class="q f"><b>f(n)</b><span>Çağrıların <b>dışında</b> (döngü, cnt++) ne kadar iş var?</span></div>
+      </div>
+      <p class="eq">T(n) = a · T(n / b) + f(n)</p>
+      <p class="note">Özyinelemeli çağrının kendisi “iş” sayılmaz; onun içindeki işi zaten T(n / b) sayıyor. Aşağıda n’yi 2’nin kuvveti seçiyoruz (2, 4, 8, 16) ki n / 2 hep tam çıksın.</p></section>`;
+
+    h += `<div class="tabs" role="tablist" aria-label="Fonksiyon seç">` + ORDER.map(k => `<button class="tab" role="tab" data-act="fn" data-v="${k}" aria-selected="${k === S.fn}">${FUNCS[k].tab}<small>${FUNCS[k].short}</small></button>`).join('') + `</div>`;
+
+    /* 1 — kod + parçalar */
+    h += `<section class="card"><h2>1 · Kodu oku ve parçalara ayır</h2>
+      <p class="note">${F.countsWhat} Aşağıdaki renkli parçalardan birine dokun: kodda ilgili satırlar boyanır.</p>
+      <div class="two"><div class="codebox" data-sel="${S.piece}">` +
+      F.code.map((l, i) => `<div class="ln ${l.c || ''}"><span class="no">${i + 1}</span><span>${l.h}</span></div>`).join('') + `</div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div class="formula"><span>T(n) =</span>
+          <button class="piece" data-act="piece" data-k="a" aria-pressed="${S.piece === 'a'}">${F.a}</button><span>·T(n /</span>
+          <button class="piece" data-act="piece" data-k="b" aria-pressed="${S.piece === 'b'}">${F.b}</button><span>) +</span>
+          <button class="piece" data-act="piece" data-k="f" aria-pressed="${S.piece === 'f'}">${F.fTxt}</button></div>
+        <div class="formula"><span>T(1) =</span><button class="piece" data-act="piece" data-k="base" aria-pressed="${S.piece === 'base'}">${F.pieces.base[1].includes('T(1) = 1') ? '1' : '0'}</button></div>
+        <div class="explain" data-k="${S.piece}"><strong>${pq}</strong><span>${pt}</span></div>
+      </div></div></section>`;
+
+    /* 2 — ağaç */
+    h += `<section class="card"><h2>2 · Çalıştır ve say</h2>
+      <p class="note">Her daire bir çağrıdır; içindeki sayı o çağrının n değeri, altındaki “+w” çağrının kendi işidir. Çağrılar yazıldıkları sırayla (soldan sağa, yukarıdan aşağıya) çalışır. Ağaç genişse yana kaydır.</p>
+      <div class="controls"><span>n =</span><span class="seg">` + [2, 4, 8, 16].map(v => `<button data-act="n" data-v="${v}" aria-pressed="${S.n === v}">${v}</button>`).join('') + `</span>
+        <button class="btn" data-act="reset" ${S.step === 0 ? 'disabled' : ''}>⏮ Başa al</button>
+        <button class="btn" data-act="back" ${S.step === 0 ? 'disabled' : ''}>◀ Geri</button>
+        <button class="btn" data-act="next" ${S.step >= N ? 'disabled' : ''}>İleri ▶</button>
+        <button class="btn primary" data-act="play">${S.timer ? 'Durdur' : (S.step >= N ? 'Baştan oynat' : 'Oynat')}</button></div>
+      <div class="counter"><span>cnt =</span><span class="big">${cnt}</span><span class="note">adım ${S.step} / ${N}</span></div>
+      <p class="stepnote">${cur ? F.stepTxt(cur) : 'Başlamak için “İleri” ya da “Oynat”a bas.'}${S.step >= N ? ` <b>Bitti: cnt = ${cnt}.</b>` : ''}</p>
+      <div class="treewrap">${treeSVG(F, T, S.step)}</div></section>`;
+
+    /* 3 — seviye tablosu */
+    h += `<section class="card"><h2>3 · Seviye seviye topla</h2>
+      <p class="note">T(n)’nin neden öyle olduğunu burada görürsün: önce her seviyedeki işi bul, sonra seviyeleri topla. Satırın üstüne gelirsen ağaçta o seviye işaretlenir (n = ${S.n}).</p>
+      <div class="tw"><table><thead><tr><th>Seviye</th><th>Çağrı sayısı</th><th>Her çağrıda n</th><th>Çağrı başına iş</th><th>Seviye toplamı</th><th class="barcell">Büyüklük</th></tr></thead><tbody>` +
+      LR.rows.map(r => `<tr data-level="${r.i}" style="--lv:var(--l${Math.min(r.i, 4)})"><td><span class="lvdot"></span>${r.i}</td><td>${r.calls}</td><td>${r.size}</td><td>${r.per}</td><td>${r.sum}</td><td class="barcell"><span class="bar" style="width:${LR.max ? Math.max(2, Math.round(110 * r.sum / LR.max)) : 2}px"></span></td></tr>`).join('') +
+      `</tbody><tfoot><tr><td colspan="4">Toplam</td><td>${LR.total}</td><td class="barcell">${LR.total === F.sim(S.n) ? '<span class="ok">✓ simülasyonla aynı</span>' : ''}</td></tr></tfoot></table></div>
+      <p>${F.levelTxt}</p><p class="note">Kapalı form: cnt = ${F.closedTxt}  (n = ${S.n} için ${F.closed(S.n)}).</p></section>`;
+
+    /* 4 — Master */
+    const c = m.caseNo;
+    h += `<section class="card"><h2>4 · Master Teoremi ile kontrol</h2>
+      <p class="note">T(n) = a·T(n/b) + f(n) için f(n) ile n<sup>log<sub>b</sub>a</sup> karşılaştırılır. Burada a = ${F.a}, b = ${F.b}.</p>
+      <p class="eq">n<sup>log<sub>${F.b}</sub>${F.a}</sup> = ${sup(logA)} = ${logA === 0 ? '1' : 'n'} &nbsp;&nbsp;|&nbsp;&nbsp; f(n) = ${F.fTxt}</p>
+      <div class="cases">
+        <div class="case ${c === 1 ? 'on' : ''}"><b>Durum 1:</b> f(n), n<sup>log<sub>b</sub>a</sup>’dan <b>daha yavaş</b> büyür → T(n) = Θ(n<sup>log<sub>b</sub>a</sup>) <span class="note">(yapraklar baskın)</span></div>
+        <div class="case ${c === 2 ? 'on' : ''}"><b>Durum 2:</b> ikisi <b>aynı hızda</b> → T(n) = Θ(n<sup>log<sub>b</sub>a</sup> · log n) <span class="note">(her seviye eşit)</span></div>
+        <div class="case ${c === 3 ? 'on' : ''}"><b>Durum 3:</b> f(n) <b>daha hızlı</b> büyür → T(n) = Θ(f(n)) <span class="note">(kök baskın)</span></div>
+      </div>
+      <p class="verdict">Sonuç: ${F.tab} için Durum ${c} → T(n) = ${m.res}</p><p>${F.insight}</p></section>`;
+
+    /* 5 — doğrulama */
+    const ns = [8, 16, 32, 64, 128, 256, 512, 1024];
+    const lastN = ns[ns.length - 1], lastC = F.sim(lastN);
+    h += `<section class="card"><h2>5 · Büyüyünce ne oluyor?</h2>
+      <p class="note">Kodu gerçekten çalıştırarak sayılan cnt değerleri. Bölümlerden biri sabit kalıyorsa büyüme hızını bulmuşsundur.</p>
+      <div class="tw"><table><thead><tr><th>n</th><th>cnt</th><th>cnt / n</th><th>cnt / (n·log₂n)</th><th>${F.closedTxt}</th></tr></thead><tbody>` +
+      ns.map(v => { const k = F.sim(v); return `<tr><td>${v}</td><td>${k}</td><td>${(k / v).toFixed(2)}</td><td>${(k / (v * lg(v))).toFixed(2)}</td><td>${F.closed(v) === k ? '<span class="ok">✓</span>' : '≠'}</td></tr>`; }).join('') + `</tbody></table></div>
+      <p>${S.fn === 'f3' ? `cnt / (n·log₂n) her satırda <b>1,00</b>: cnt = n·log₂n, yani O(n log n).` : `cnt / n, n büyürken <b>2’ye</b> yaklaşıyor (n = ${lastN} için ${(lastC / lastN).toFixed(2)}): cnt ≈ 2n, yani O(n).`}</p></section>`;
+
+    /* özet */
+    h += `<section class="card"><h2>Dördü yan yana</h2><p class="note">Satıra dokununca o fonksiyona geçersin. Aynı ağaç şekli (F1, F3, F4) farklı iş miktarıyla farklı sonuç verir.</p>
+      <div class="tw"><table><thead><tr><th>Fonksiyon</th><th>a</th><th>b</th><th>f(n)</th><th>T(n)</th><th>Big-O</th></tr></thead><tbody>` +
+      ORDER.map(k => { const G = FUNCS[k]; return `<tr class="sumrow ${k === S.fn ? 'cur' : ''}" data-act="fn" data-v="${k}"><td>${G.tab}</td><td>${G.a}</td><td>${G.b}</td><td>${G.fTxt}</td><td>${G.a}T(n/${G.b}) + ${G.fTxt}</td><td>${G.master.res.replace('Θ', 'O')}</td></tr>`; }).join('') + `</tbody></table></div></section>`;
+
+    app.innerHTML = h;
+  }
+
+  /* ---- Etkileşim ---- */
+  function stop() { if (S.timer) { clearInterval(S.timer); S.timer = null; } }
+  app.addEventListener('click', e => {
+    const t = e.target.closest('[data-act]'); if (!t) return;
+    const act = t.dataset.act, N = buildTree(FUNCS[S.fn], S.n).nodes.length;
+    if (act === 'fn') { stop(); S.fn = t.dataset.v; S.piece = 'a'; S.step = null; try { history.replaceState(null, '', '#' + S.fn); } catch (x) {} }
+    else if (act === 'piece') S.piece = t.dataset.k;
+    else if (act === 'n') { stop(); S.n = +t.dataset.v; S.step = null; }
+    else if (act === 'reset') { stop(); S.step = 0; }
+    else if (act === 'back') { stop(); S.step = Math.max(0, S.step - 1); }
+    else if (act === 'next') { stop(); S.step = Math.min(N, S.step + 1); }
+    else if (act === 'play') {
+      if (S.timer) stop();
+      else {
+        if (S.step >= N) S.step = 0;
+        S.timer = setInterval(() => { const n2 = buildTree(FUNCS[S.fn], S.n).nodes.length; if (S.step >= n2) { stop(); } else S.step++; render(); }, 650);
+      }
+    }
+    render();
+  });
+  function hl(level, on) { app.querySelectorAll('.nd[data-level="' + level + '"]').forEach(g => g.classList.toggle('hl', on)); }
+  app.addEventListener('mouseover', e => { const r = e.target.closest('tr[data-level]'); if (r) hl(r.dataset.level, true); });
+  app.addEventListener('mouseout', e => { const r = e.target.closest('tr[data-level]'); if (r) hl(r.dataset.level, false); });
+  render();
+})();
+</script>
+
+</body></html>

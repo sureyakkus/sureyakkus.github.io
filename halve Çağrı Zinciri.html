@@ -1,0 +1,438 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>halve Çağrı Zinciri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sol sütunda kod + açıklama, sağ sütunda çağrı ağacı + yığın; alt çubukta oynatma kontrolleri. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --surface-2: #e9eef2;
+  --fg: #16212b;
+  --fg-soft: #51606d;
+  --line: #cfd8e0;
+  --accent: #0b6e8a;
+  --accent-soft: #d6eef5;
+  --cnt: #b45309;
+  --cnt-soft: #fdebd2;
+  --done: #6b7a88;
+  --code-bg: #0f1c26;
+  --code-fg: #d8e4ee;
+  --code-dim: #6d8497;
+  --code-hl: #1c3a4d;
+  --code-hl-edge: #4fc3e0;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1419; --surface: #151f27; --surface-2: #1d2a34; --fg: #e4ecf2; --fg-soft: #93a4b3;
+    --line: #2b3b47; --accent: #4fc3e0; --accent-soft: #14323f; --cnt: #f5b14a; --cnt-soft: #3a2a10;
+    --done: #8fa1b0; --code-bg: #0a1117; --code-fg: #d8e4ee; --code-dim: #6d8497; --code-hl: #17384a; --code-hl-edge: #4fc3e0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1419; --surface: #151f27; --surface-2: #1d2a34; --fg: #e4ecf2; --fg-soft: #93a4b3;
+  --line: #2b3b47; --accent: #4fc3e0; --accent-soft: #14323f; --cnt: #f5b14a; --cnt-soft: #3a2a10;
+  --done: #8fa1b0; --code-bg: #0a1117; --code-fg: #d8e4ee; --code-dim: #6d8497; --code-hl: #17384a; --code-hl-edge: #4fc3e0;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 20px 110px; }
+* { box-sizing: border-box; }
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 1.5rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+.lede { margin: 4px 0 0; color: var(--fg-soft); max-width: 70ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+.label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-soft); font-weight: 600; margin: 0 0 10px; }
+
+/* kod */
+.code { background: var(--code-bg); border-radius: 8px; padding: 10px 0; font-family: var(--font-mono); font-size: 0.86rem; overflow-x: auto; }
+.cl { display: flex; align-items: center; gap: 10px; padding: 3px 12px 3px 10px; border-left: 3px solid transparent; color: var(--code-fg); white-space: pre; min-width: max-content; }
+.cl .no { color: var(--code-dim); width: 1.2em; text-align: right; user-select: none; }
+.cl .note { margin-left: auto; padding-left: 18px; color: var(--code-hl-edge); font-size: 0.78rem; }
+.cl.on { background: var(--code-hl); border-left-color: var(--code-hl-edge); }
+.running { margin: 0 0 8px; font-size: 0.9rem; color: var(--fg-soft); }
+.running b { color: var(--fg); font-family: var(--font-mono); font-weight: 600; }
+
+.explain { font-size: 1.02rem; min-height: 4.6em; margin: 0; }
+.stepno { font-family: var(--font-mono); font-size: 0.8rem; color: var(--fg-soft); margin-bottom: 6px; display: block; }
+
+/* cnt */
+.cntrow { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.cnt { font-family: var(--font-mono); font-weight: 600; font-size: 3rem; line-height: 1; color: var(--cnt); font-variant-numeric: tabular-nums; background: var(--cnt-soft); border-radius: 8px; padding: 8px 16px; min-width: 2.2em; text-align: center; }
+.cnt.flash { animation: pop 0.35s ease-out; }
+@keyframes pop { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .cnt.flash { animation: none; } }
+.cntmeta { color: var(--fg-soft); font-size: 0.9rem; flex: 1; min-width: 12em; }
+.cells { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+.cell { width: 26px; height: 26px; border-radius: 5px; border: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.7rem; display: grid; place-items: center; color: var(--fg-soft); font-variant-numeric: tabular-nums; }
+.cell.fill { background: var(--cnt); border-color: var(--cnt); color: var(--bg); font-weight: 600; }
+.cellnote { font-size: 0.82rem; color: var(--fg-soft); margin: 8px 0 0; }
+
+/* ağaç */
+.treebox { overflow-x: auto; }
+svg.tree { display: block; width: 100%; max-width: 400px; margin: 0 auto; height: auto; }
+.tree text { font-family: var(--font-mono); fill: var(--fg); }
+.tree .lvl { font-family: var(--font-body); font-size: 11px; fill: var(--fg-soft); }
+.tree .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+.tree .edge.live { stroke: var(--accent); }
+.tree .nrect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.tree .nn { font-size: 15px; font-weight: 600; text-anchor: middle; }
+.tree .nw { font-size: 10.5px; text-anchor: middle; fill: var(--fg-soft); }
+.tree .node.wait .nrect { stroke: var(--accent); stroke-dasharray: none; stroke-width: 2; fill: var(--accent-soft); }
+.tree .node.active .nrect { stroke: var(--accent); stroke-dasharray: none; fill: var(--accent); stroke-width: 2; }
+.tree .node.active text { fill: #ffffff; }
+:root[data-theme="dark"] .tree .node.active text { fill: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tree .node.active text { fill: #06222b; } }
+.tree .node.done .nrect { stroke: var(--done); stroke-dasharray: none; fill: var(--surface-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; font-size: 0.8rem; color: var(--fg-soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 12px; border-radius: 3px; border: 1.5px solid var(--line); display: inline-block; }
+.sw.idle { border-style: dashed; background: var(--surface); }
+.sw.active { background: var(--accent); border-color: var(--accent); }
+.sw.wait { background: var(--accent-soft); border-color: var(--accent); }
+.sw.done { background: var(--surface-2); border-color: var(--done); }
+
+/* yığın */
+.stack { display: flex; flex-direction: column-reverse; gap: 6px; min-height: 44px; }
+.frame { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border: 1.5px solid var(--accent); border-radius: 7px; padding: 6px 10px; background: var(--accent-soft); font-size: 0.88rem; }
+.frame code { font-family: var(--font-mono); font-weight: 600; }
+.frame.top { background: var(--accent); color: #fff; }
+:root[data-theme="dark"] .frame.top { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .frame.top { color: #06222b; } }
+.empty { color: var(--fg-soft); font-size: 0.9rem; padding: 6px 2px; }
+
+/* seviyeler */
+.levels { display: flex; flex-direction: column; gap: 10px; }
+.lv { display: grid; grid-template-columns: 5.5em minmax(0, 1fr) 4.6em; gap: 10px; align-items: center; font-size: 0.88rem; }
+.bar { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--cnt); width: 0; transition: width 0.15s; }
+.lv .v { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.sum { margin: 12px 0 0; font-size: 0.92rem; color: var(--fg-soft); }
+.sum b { color: var(--cnt); font-family: var(--font-mono); }
+
+/* kontroller */
+.bar-ctl { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 5; }
+.ctl { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button, select { font: inherit; color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 12px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] button.primary { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #06222b; } }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.slider span { font-family: var(--font-mono); font-size: 0.82rem; color: var(--fg-soft); white-space: nowrap; }
+.spacer { flex: 1; }
+
+.tree .edge.ret { stroke-dasharray: 5 4; }
+.tree .edge.live { stroke: var(--accent); }
+.tree .edge.retlive { stroke: var(--cnt); stroke-dasharray: none; }
+.tree .head { fill: var(--line); }
+.tree .head.live { fill: var(--accent); }
+.tree .head.retlive { fill: var(--cnt); }
+.tree .nn { font-size: 14px; }
+.tree .nw { font-size: 11px; }
+.tree .rv { font-size: 13px; font-weight: 600; fill: var(--cnt); text-anchor: start; }
+.tree .cl2 { font-family: var(--font-body); font-size: 10.5px; fill: var(--fg-soft); text-anchor: start; }
+.expr { font-family: var(--font-mono); font-size: 0.82rem; }
+.cnt.res { color: var(--cnt); }
+.lv .t { font-family: var(--font-mono); }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>halve(32) adım adım: sonuç neden 5?</h1>
+    <p class="lede">İleri düğmesiyle (veya klavyede → tuşuyla) her satırı tek tek çalıştır. Önce çağrılar yığına iner, en alttaki halve(1) 0 döndürür, sonra her çağrı aldığı sonuca 1 ekleyerek yukarı çıkar.</p>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card" aria-label="Kod">
+        <p class="label">Kod</p>
+        <p class="running" id="running"></p>
+        <div class="code" id="code"></div>
+      </section>
+      <section class="card" aria-live="polite">
+        <p class="label">Bu adımda ne oluyor</p>
+        <span class="stepno" id="stepno"></span>
+        <p class="explain" id="explain"></p>
+      </section>
+      <section class="card">
+        <p class="label">Çağrı yığını (en üstteki çalışan çağrıdır)</p>
+        <div class="stack" id="stack"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <p class="label">Çağrı zinciri</p>
+        <div class="treebox"><svg class="tree" id="tree" role="img" aria-label="halve(32) çağrı zinciri"></svg></div>
+        <div class="legend">
+          <span><i class="sw idle"></i>henüz çağrılmadı</span>
+          <span><i class="sw active"></i>şu an çalışıyor</span>
+          <span><i class="sw wait"></i>alt çağrının sonucunu bekliyor</span>
+          <span><i class="sw done"></i>bitti, sonucunu döndürdü</span>
+        </div>
+        <p class="cellnote">Mavi oklar aşağı doğru çağrıyı, turuncu oklar yukarı doğru dönen sonucu gösterir.</p>
+      </section>
+      <section class="card">
+        <p class="label">En son dönen değer</p>
+        <div class="cntrow">
+          <div class="cnt res" id="cnt">–</div>
+          <div class="cntmeta" id="cntmeta"></div>
+        </div>
+        <div class="cells" id="cells"></div>
+        <p class="cellnote" id="cellnote"></p>
+      </section>
+      <section class="card">
+        <p class="label">Her çağrının işi sabit, çağrı sayısı log n</p>
+        <div class="levels" id="levels"></div>
+        <p class="sum" id="sum"></p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="bar-ctl">
+  <div class="ctl">
+    <div class="slider"><input type="range" id="slider" min="0" value="0" aria-label="Adım"><span id="pos"></span></div>
+    <div class="btns">
+      <button id="reset">Başa dön</button>
+      <button id="prev">← Geri</button>
+      <button id="next" class="primary">İleri →</button>
+      <button id="play">▶ Oynat</button>
+      <button id="skip" title="En alttaki base case'e kadar ilerle">Base case'e atla</button>
+      <span class="spacer"></span>
+      <label for="speed" style="font-size:0.85rem;color:var(--fg-soft)">Hız</label>
+      <select id="speed">
+        <option value="1100">Yavaş</option>
+        <option value="700" selected>Normal</option>
+        <option value="300">Hızlı</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var CODE = [
+    "int halve(int n) {",
+    "  if (n <= 1) return 0;",
+    "  return 1 + halve(n / 2);",
+    "}"
+  ];
+  var ROOT_N = 32;
+
+  var nodes = [], steps = [], stack = [], done = [], results = {}, lastRet = null, ones = 0;
+
+  function snap(kind, line, text, note) {
+    steps.push({
+      kind: kind, line: line, text: text, note: note || "",
+      stack: stack.map(function (f) { return { id: f.id, n: f.n, line: f.line, expr: f.expr }; }),
+      done: done.slice(), results: JSON.parse(JSON.stringify(results)),
+      lastRet: lastRet, ones: ones, calls: nodes.length
+    });
+  }
+
+  function run(n, depth) {
+    var id = nodes.length;
+    nodes.push({ id: id, n: n, depth: depth });
+    var f = { id: id, n: n, line: 0, expr: "" };
+    stack.push(f);
+    snap("enter", 0, "halve(" + n + ") çağrıldı. Yığına yeni bir çerçeve eklendi; bu çağrının kendi n değeri " + n + ".", "n = " + n);
+    f.line = 1;
+    if (n <= 1) {
+      snap("checkbase", 1, "if (n <= 1): n = " + n + " olduğu için koşul doğru. Base case: daha fazla bölmeden 0 döndürülecek.", "n = " + n + " → doğru");
+      results[id] = 0; lastRet = 0; f.expr = "return 0";
+      snap("baseret", 1, "return 0 çalıştı. halve(" + n + ") sonucu 0. Bu 0, kendisini çağıran halve(2)'ye gidiyor.", "return 0");
+      done.push(id); stack.pop();
+      return 0;
+    }
+    snap("check", 1, "if (n <= 1): n = " + n + ", koşul yanlış. Base case değil, devam ediliyor.", "n = " + n + " → yanlış");
+    var h = Math.floor(n / 2);
+    f.line = 2; f.expr = "1 + halve(" + h + ") = 1 + ?";
+    snap("call", 2, "return 1 + halve(" + h + "): toplamayı yapabilmek için önce halve(" + h + ") sonucu lazım. Bu çağrı yığında bekleyecek, halve(" + h + ") çağrılıyor.", "halve(" + h + ") çağrılıyor");
+    var r = run(h, depth + 1);
+    var res = 1 + r;
+    f.line = 2; f.expr = "1 + " + r + " = " + res;
+    results[id] = res; lastRet = res; ones++;
+    snap("return", 2, "halve(" + h + ") " + r + " döndürdü. Şimdi 1 + " + r + " = " + res + " hesaplanıp return ediliyor: halve(" + n + ") = " + res + ".", "1 + " + r + " = " + res);
+    done.push(id); stack.pop();
+    return res;
+  }
+  run(ROOT_N, 0);
+  snap("final", -1, "Hepsi bitti. halve(32) = 5, çünkü 32'yi 1'e indirmek için 5 kez ikiye bölmek gerekti (32 → 16 → 8 → 4 → 2 → 1). Toplam 6 çağrı yapıldı.", "");
+
+  var firstBase = 0;
+  steps.forEach(function (s, i) { if (!firstBase && s.kind === "checkbase") firstBase = i; });
+
+  /* ---------- zincir yerleşimi (dikey) ---------- */
+  var RW = 150, RH = 50, GAPY = 46, TOPY = 14, XC = 120;
+  var W = 360, H = TOPY + nodes.length * RH + (nodes.length - 1) * GAPY + 14;
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("tree");
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  var X1 = XC - 30, X2 = XC + 30;
+  nodes.forEach(function (nd) { nd.y = TOPY + nd.id * (RH + GAPY); });
+  var downEls = {}, upEls = {}, downHead = {}, upHead = {}, retLbl = {}, nodeEls = {}, resEls = {}, callLbl = {};
+  nodes.forEach(function (nd) {
+    if (nd.id === 0) return;
+    var p = nodes[nd.id - 1];
+    var y0 = p.y + RH, y1 = nd.y;
+    downEls[nd.id] = el("path", { "class": "edge", d: "M" + X1 + " " + y0 + " L" + X1 + " " + (y1 - 7) }, svg);
+    downHead[nd.id] = el("polygon", { "class": "head", points: X1 + "," + y1 + " " + (X1 - 5) + "," + (y1 - 8) + " " + (X1 + 5) + "," + (y1 - 8) }, svg);
+    var cl = el("text", { "class": "cl2", x: X1 - 8, y: (y0 + y1) / 2 + 4, "text-anchor": "end" }, svg);
+    cl.setAttribute("style", "text-anchor:end");
+    cl.textContent = "n/2 = " + nd.n;
+    upEls[nd.id] = el("path", { "class": "edge ret", d: "M" + X2 + " " + (y1 - 0) + " L" + X2 + " " + (y0 + 8) }, svg);
+    upHead[nd.id] = el("polygon", { "class": "head", points: X2 + "," + y0 + " " + (X2 - 5) + "," + (y0 + 8) + " " + (X2 + 5) + "," + (y0 + 8) }, svg);
+    retLbl[nd.id] = el("text", { "class": "rv", x: X2 + 10, y: (y0 + y1) / 2 + 4 }, svg);
+  });
+  nodes.forEach(function (nd) {
+    var g = el("g", { "class": "node" }, svg);
+    el("rect", { "class": "nrect", x: XC - RW / 2, y: nd.y, width: RW, height: RH, rx: 8 }, g);
+    var a = el("text", { "class": "nn", x: XC, y: nd.y + 21, "text-anchor": "middle" }, g); a.textContent = "halve(" + nd.n + ")";
+    var b = el("text", { "class": "nw", x: XC, y: nd.y + 39, "text-anchor": "middle" }, g); b.textContent = "sonuç: ?";
+    nodeEls[nd.id] = g; resEls[nd.id] = b;
+    var lab = el("text", { "class": "cl2", x: XC + RW / 2 + 12, y: nd.y + 28 }, svg);
+    lab.textContent = ""; callLbl[nd.id] = lab;
+  });
+
+  /* ---------- sabit DOM ---------- */
+  var codeEl = document.getElementById("code");
+  var codeLines = CODE.map(function (txt, i) {
+    var row = document.createElement("div"); row.className = "cl";
+    var no = document.createElement("span"); no.className = "no"; no.textContent = i + 1;
+    var tx = document.createElement("span"); tx.textContent = txt;
+    var nt = document.createElement("span"); nt.className = "note";
+    row.appendChild(no); row.appendChild(tx); row.appendChild(nt);
+    codeEl.appendChild(row);
+    return { row: row, note: nt };
+  });
+
+  var levelsEl = document.getElementById("levels");
+  var levelRows = nodes.map(function (nd) {
+    var row = document.createElement("div"); row.className = "lv";
+    row.innerHTML = "<span class=\"t\">halve(" + nd.n + ")</span><div class=\"bar\"><i></i></div><span class=\"v\">–</span>";
+    levelsEl.appendChild(row);
+    return { bar: row.querySelector("i"), v: row.querySelector(".v") };
+  });
+
+  var ONES = nodes.length - 1;
+  var $ = function (id) { return document.getElementById(id); };
+  var cur = 0, timer = null;
+  var slider = $("slider");
+  slider.max = steps.length - 1;
+
+  function render() {
+    var s = steps[cur];
+    var top = s.stack.length ? s.stack[s.stack.length - 1] : null;
+
+    codeLines.forEach(function (c, i) {
+      var on = i === s.line;
+      c.row.className = "cl" + (on ? " on" : "");
+      c.note.textContent = on ? s.note : "";
+    });
+    $("running").innerHTML = top ? "Şu an çalışan çağrı: <b>halve(" + top.n + ")</b>" : "Çalışan çağrı yok, program bitti.";
+    $("stepno").textContent = "Adım " + (cur + 1) + " / " + steps.length;
+    $("explain").textContent = s.text;
+
+    var c = $("cnt");
+    c.textContent = s.lastRet === null ? "–" : s.lastRet;
+    var isRet = s.kind === "baseret" || s.kind === "return";
+    $("cntmeta").textContent = s.lastRet === null ? "Henüz hiçbir çağrı değer döndürmedi." : (isRet ? "Bu adımda halve(" + (top ? top.n : "") + ") bu değeri döndürdü." : (s.kind === "final" ? "halve(32) sonucu." : "Son dönen değer (bu adımda yeni değer dönmedi)."));
+
+    var cells = $("cells"); cells.innerHTML = "";
+    for (var i = 0; i < ONES; i++) {
+      var d = document.createElement("div");
+      d.className = "cell" + (i < s.ones ? " fill" : "");
+      d.textContent = i < s.ones ? "+1" : "";
+      cells.appendChild(d);
+    }
+    $("cellnote").textContent = "Her dolu kutu, bir çağrının yukarı çıkarken sonuca eklediği 1'dir. Dolu: " + s.ones + "/" + ONES + ". Base case 0 ekler, o yüzden toplam 5.";
+
+    var st = $("stack"); st.innerHTML = "";
+    if (!s.stack.length) { st.innerHTML = "<div class=\"empty\">Yığın boş.</div>"; }
+    s.stack.forEach(function (f, idx) {
+      var isTop = idx === s.stack.length - 1;
+      var dv = document.createElement("div");
+      dv.className = "frame" + (isTop ? " top" : "");
+      var right = f.expr ? "<span class=\"expr\">" + f.expr + "</span>" : "<span>çalışıyor, satır " + (f.line + 1) + "</span>";
+      dv.innerHTML = "<code>halve(" + f.n + ")</code>" + right;
+      st.appendChild(dv);
+    });
+
+    var doneSet = {}; s.done.forEach(function (id) { doneSet[id] = true; });
+    var onStack = {}; s.stack.forEach(function (f, idx) { onStack[f.id] = idx === s.stack.length - 1 ? "active" : "wait"; });
+    nodes.forEach(function (nd) {
+      var cls = "node";
+      if (onStack[nd.id]) cls += " " + onStack[nd.id]; else if (doneSet[nd.id]) cls += " done";
+      nodeEls[nd.id].setAttribute("class", cls);
+      resEls[nd.id].textContent = doneSet[nd.id] ? "sonuç: " + s.results[nd.id] : "sonuç: ?";
+      if (nd.id > 0) {
+        var called = nd.id < s.calls;
+        downEls[nd.id].setAttribute("class", "edge" + (called ? " live" : ""));
+        downHead[nd.id].setAttribute("class", "head" + (called ? " live" : ""));
+        var back = !!doneSet[nd.id];
+        upEls[nd.id].setAttribute("class", "edge ret" + (back ? " retlive" : ""));
+        upHead[nd.id].setAttribute("class", "head" + (back ? " retlive" : ""));
+        retLbl[nd.id].textContent = back ? "döndü: " + s.results[nd.id] : "";
+      }
+    });
+
+    levelRows.forEach(function (r, i) {
+      var entered = i < s.calls;
+      r.bar.style.width = entered ? "100%" : "0";
+      r.v.textContent = entered ? "c" : "–";
+    });
+    $("sum").innerHTML = "Çağrı sayısı: <b>" + s.calls + "</b>" + (s.kind === "final" ? " = log₂ 32 + 1 = 6. Her çağrı sabit iş (c) yaptığı için T(n) = T(n/2) + c ⇒ O(log n)." : " (her çağrı sabit iş yapar: bir karşılaştırma ve bir toplama).");
+
+    slider.value = cur;
+    $("pos").textContent = (cur + 1) + "/" + steps.length;
+    $("prev").disabled = cur === 0; $("reset").disabled = cur === 0;
+    var atEnd = cur === steps.length - 1;
+    $("next").disabled = atEnd;
+    $("skip").disabled = cur >= firstBase;
+    if (atEnd) stop();
+  }
+
+  function go(i) { cur = Math.max(0, Math.min(steps.length - 1, i)); render(); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } $("play").textContent = "▶ Oynat"; }
+  function play() {
+    if (cur === steps.length - 1) cur = 0;
+    $("play").textContent = "⏸ Duraklat";
+    timer = setInterval(function () { go(cur + 1); }, parseInt($("speed").value, 10));
+    render();
+  }
+
+  $("next").onclick = function () { stop(); go(cur + 1); };
+  $("prev").onclick = function () { stop(); go(cur - 1); };
+  $("reset").onclick = function () { stop(); go(0); };
+  $("play").onclick = function () { timer ? stop() : play(); };
+  $("skip").onclick = function () { stop(); go(firstBase); };
+  $("speed").onchange = function () { if (timer) { stop(); play(); } };
+  slider.oninput = function () { stop(); go(parseInt(slider.value, 10)); };
+  document.addEventListener("keydown", function (e) {
+    if (e.target && e.target.tagName === "SELECT") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); stop(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); stop(); go(cur - 1); }
+  });
+
+  go(0);
+})();
+</script>
+
+</body></html>

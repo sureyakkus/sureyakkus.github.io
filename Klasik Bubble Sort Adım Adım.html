@@ -1,0 +1,558 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Klasik Bubble Sort Adım Adım</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sol sütunda kod + açıklama, sağ sütunda çağrı ağacı + yığın; alt çubukta oynatma kontrolleri. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --surface-2: #e9eef2;
+  --fg: #16212b;
+  --fg-soft: #51606d;
+  --line: #cfd8e0;
+  --accent: #0b6e8a;
+  --accent-soft: #d6eef5;
+  --cnt: #b45309;
+  --cnt-soft: #fdebd2;
+  --done: #6b7a88;
+  --code-bg: #0f1c26;
+  --code-fg: #d8e4ee;
+  --code-dim: #6d8497;
+  --code-hl: #1c3a4d;
+  --code-hl-edge: #4fc3e0;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1419; --surface: #151f27; --surface-2: #1d2a34; --fg: #e4ecf2; --fg-soft: #93a4b3;
+    --line: #2b3b47; --accent: #4fc3e0; --accent-soft: #14323f; --cnt: #f5b14a; --cnt-soft: #3a2a10;
+    --done: #8fa1b0; --code-bg: #0a1117; --code-fg: #d8e4ee; --code-dim: #6d8497; --code-hl: #17384a; --code-hl-edge: #4fc3e0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1419; --surface: #151f27; --surface-2: #1d2a34; --fg: #e4ecf2; --fg-soft: #93a4b3;
+  --line: #2b3b47; --accent: #4fc3e0; --accent-soft: #14323f; --cnt: #f5b14a; --cnt-soft: #3a2a10;
+  --done: #8fa1b0; --code-bg: #0a1117; --code-fg: #d8e4ee; --code-dim: #6d8497; --code-hl: #17384a; --code-hl-edge: #4fc3e0;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 20px 110px; }
+* { box-sizing: border-box; }
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 1.5rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+.lede { margin: 4px 0 0; color: var(--fg-soft); max-width: 70ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+.label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-soft); font-weight: 600; margin: 0 0 10px; }
+
+/* kod */
+.code { background: var(--code-bg); border-radius: 8px; padding: 10px 0; font-family: var(--font-mono); font-size: 0.86rem; overflow-x: auto; }
+.cl { display: flex; align-items: center; gap: 10px; padding: 3px 12px 3px 10px; border-left: 3px solid transparent; color: var(--code-fg); white-space: pre; min-width: max-content; }
+.cl .no { color: var(--code-dim); width: 1.2em; text-align: right; user-select: none; }
+.cl .note { margin-left: auto; padding-left: 18px; color: var(--code-hl-edge); font-size: 0.78rem; }
+.cl.on { background: var(--code-hl); border-left-color: var(--code-hl-edge); }
+.running { margin: 0 0 8px; font-size: 0.9rem; color: var(--fg-soft); }
+.running b { color: var(--fg); font-family: var(--font-mono); font-weight: 600; }
+
+.explain { font-size: 1.02rem; min-height: 4.6em; margin: 0; }
+.stepno { font-family: var(--font-mono); font-size: 0.8rem; color: var(--fg-soft); margin-bottom: 6px; display: block; }
+
+/* cnt */
+.cntrow { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.cnt { font-family: var(--font-mono); font-weight: 600; font-size: 3rem; line-height: 1; color: var(--cnt); font-variant-numeric: tabular-nums; background: var(--cnt-soft); border-radius: 8px; padding: 8px 16px; min-width: 2.2em; text-align: center; }
+.cnt.flash { animation: pop 0.35s ease-out; }
+@keyframes pop { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .cnt.flash { animation: none; } }
+.cntmeta { color: var(--fg-soft); font-size: 0.9rem; flex: 1; min-width: 12em; }
+.cells { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+.cell { width: 26px; height: 26px; border-radius: 5px; border: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.7rem; display: grid; place-items: center; color: var(--fg-soft); font-variant-numeric: tabular-nums; }
+.cell.fill { background: var(--cnt); border-color: var(--cnt); color: var(--bg); font-weight: 600; }
+.cellnote { font-size: 0.82rem; color: var(--fg-soft); margin: 8px 0 0; }
+
+/* ağaç */
+.treebox { overflow-x: auto; }
+svg.tree { display: block; min-width: 520px; width: 100%; height: auto; }
+.tree text { font-family: var(--font-mono); fill: var(--fg); }
+.tree .lvl { font-family: var(--font-body); font-size: 11px; fill: var(--fg-soft); }
+.tree .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+.tree .edge.live { stroke: var(--accent); }
+.tree .nrect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.tree .nn { font-size: 15px; font-weight: 600; text-anchor: middle; }
+.tree .nw { font-size: 10.5px; text-anchor: middle; fill: var(--fg-soft); }
+.tree .node.wait .nrect { stroke: var(--accent); stroke-dasharray: none; stroke-width: 2; fill: var(--accent-soft); }
+.tree .node.active .nrect { stroke: var(--accent); stroke-dasharray: none; fill: var(--accent); stroke-width: 2; }
+.tree .node.active text { fill: #ffffff; }
+:root[data-theme="dark"] .tree .node.active text { fill: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tree .node.active text { fill: #06222b; } }
+.tree .node.done .nrect { stroke: var(--done); stroke-dasharray: none; fill: var(--surface-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; font-size: 0.8rem; color: var(--fg-soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 12px; border-radius: 3px; border: 1.5px solid var(--line); display: inline-block; }
+.sw.idle { border-style: dashed; background: var(--surface); }
+.sw.active { background: var(--accent); border-color: var(--accent); }
+.sw.wait { background: var(--accent-soft); border-color: var(--accent); }
+.sw.done { background: var(--surface-2); border-color: var(--done); }
+
+/* yığın */
+.stack { display: flex; flex-direction: column-reverse; gap: 6px; min-height: 44px; }
+.frame { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border: 1.5px solid var(--accent); border-radius: 7px; padding: 6px 10px; background: var(--accent-soft); font-size: 0.88rem; }
+.frame code { font-family: var(--font-mono); font-weight: 600; }
+.frame.top { background: var(--accent); color: #fff; }
+:root[data-theme="dark"] .frame.top { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .frame.top { color: #06222b; } }
+.empty { color: var(--fg-soft); font-size: 0.9rem; padding: 6px 2px; }
+
+/* seviyeler */
+.levels { display: flex; flex-direction: column; gap: 10px; }
+.lv { display: grid; grid-template-columns: 5.5em minmax(0, 1fr) 4.6em; gap: 10px; align-items: center; font-size: 0.88rem; }
+.bar { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--cnt); width: 0; transition: width 0.15s; }
+.lv .v { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.sum { margin: 12px 0 0; font-size: 0.92rem; color: var(--fg-soft); }
+.sum b { color: var(--cnt); font-family: var(--font-mono); }
+
+/* kontroller */
+.bar-ctl { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 5; }
+.ctl { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button, select { font: inherit; color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 12px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] button.primary { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #06222b; } }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.slider span { font-family: var(--font-mono); font-size: 0.82rem; color: var(--fg-soft); white-space: nowrap; }
+.spacer { flex: 1; }
+
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg button { padding: 8px 14px; }
+.seg button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] .seg button[aria-selected="true"] { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg button[aria-selected="true"] { color: #06222b; } }
+.qtext { margin: 0 0 10px; font-size: 0.95rem; }
+.ans { margin: 0; padding-left: 1.1em; font-size: 0.93rem; display: flex; flex-direction: column; gap: 6px; }
+.ans li { padding-left: 2px; }
+.ans code, .qtext code { font-family: var(--font-mono); font-size: 0.86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.arr { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; }
+.box { width: 62px; height: 62px; border-radius: 9px; border: 2px solid var(--line); background: var(--surface); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 1.35rem; position: relative; font-variant-numeric: tabular-nums; }
+.box small { font-size: 0.7rem; font-weight: 600; position: absolute; right: 6px; bottom: 3px; }
+.box small.ta { color: var(--accent); } .box small.tb { color: var(--cnt); }
+.tile.sorted .box { background: var(--surface-2); border-color: var(--done); color: var(--fg-soft); }
+.tile.isi .box { border-color: var(--accent); }
+.tile.isj .box { background: var(--accent-soft); border-color: var(--accent); }
+.tile.ismin .box { background: var(--cnt-soft); border-color: var(--cnt); color: var(--cnt); }
+.tile.swapped .box { background: var(--cnt-soft); border-color: var(--cnt); animation: pop 0.35s ease-out; }
+.tile .ix { font-family: var(--font-mono); font-size: 0.75rem; color: var(--fg-soft); }
+.tile .mk { font-family: var(--font-mono); font-size: 0.72rem; min-height: 2.6em; text-align: center; line-height: 1.25; color: var(--accent); font-weight: 600; }
+.tile .mk .m { color: var(--cnt); display: block; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 420px) { .stats { grid-template-columns: minmax(0, 1fr); } }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font-family: var(--font-mono); font-size: 1.9rem; line-height: 1.1; color: var(--cnt); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.8rem; color: var(--fg-soft); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; min-width: 440px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; }
+th { background: var(--surface-2); font-weight: 600; }
+td.mono { font-family: var(--font-mono); }
+tr.cur td { background: var(--accent-soft); }
+tr.pending td { color: var(--fg-soft); }
+.calc { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 8px; }
+.calc input { width: 6em; font: inherit; font-family: var(--font-mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); }
+.calc-out { font-family: var(--font-mono); font-size: 0.95rem; margin: 4px 0; }
+.calc-out b { color: var(--cnt); }
+.tempslot { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-family: var(--font-mono); font-size: 0.85rem; color: var(--fg-soft); flex-wrap: wrap; }
+.tbox { min-width: 62px; height: 48px; padding: 0 10px; border-radius: 9px; border: 2px dashed var(--line); background: var(--surface); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 1.15rem; color: var(--fg-soft); }
+.tbox.set { border-style: solid; border-color: var(--cnt); background: var(--cnt-soft); color: var(--cnt); }
+.tbox.flash { animation: pop 0.35s ease-out; }
+.tempslot .why { font-family: var(--font-body); font-size: 0.82rem; }
+td.tcode { font-family: var(--font-mono); text-align: left; white-space: nowrap; }
+td.hl { background: var(--cnt-soft); font-weight: 600; color: var(--cnt); }
+.msg { margin: 0; color: var(--fg-soft); font-size: 0.9rem; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--font-mono); font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); }
+.chip.fixed { text-decoration: line-through; color: var(--fg-soft); background: var(--surface-2); border-color: var(--done); }
+.chip.on { background: var(--cnt-soft); border-color: var(--cnt); color: var(--cnt); font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Soru 7: Klasik Bubble Sort adım adım</h1>
+    <p class="lede">En yalın hali: bayrak yok, erken çıkış yok. Dış döngü her zaman n − 1 tur döner, iç döngü komşu çiftleri karşılaştırır ve yer değiştirme <code style="font-family:var(--font-mono)">temp</code> ile üç satırda yapılır. İleri düğmesiyle (veya → tuşuyla) her satırı tek tek çalıştır.</p>
+  </header>
+
+  <div class="seg" role="tablist" aria-label="Soru parçası" id="seg">
+    <button role="tab" id="tab-ab" aria-selected="true" data-sc="ab">a–b: [7, 3, 9, 1, 5]</button>
+    <button role="tab" id="tab-c1" aria-selected="false" data-sc="c1">c: [2, 1, 3, 4, 5]</button>
+    <button role="tab" id="tab-c2" aria-selected="false" data-sc="c2">c: [1, 2, 3, 4, 5]</button>
+    <button role="tab" id="tab-d1" aria-selected="false" data-sc="d1">d: kararlılık [2a, 2b, 1]</button>
+    <button role="tab" id="tab-d2" aria-selected="false" data-sc="d2">d: ters sıralı [5, 4, 3, 2, 1]</button>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card" aria-label="Kod">
+        <p class="label">Kod (klasik Bubble Sort)</p>
+        <p class="running" id="running"></p>
+        <div class="code" id="code"></div>
+      </section>
+      <section class="card" aria-live="polite">
+        <p class="label">Bu adımda ne oluyor</p>
+        <span class="stepno" id="stepno"></span>
+        <p class="explain" id="explain"></p>
+      </section>
+      <section class="card">
+        <p class="label">Soru ve cevap</p>
+        <p class="qtext" id="qtext"></p>
+        <ul class="ans" id="ans"></ul>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <p class="label">Dizi</p>
+        <div class="arr" id="arr"></div>
+        <div class="tempslot">
+          <span>değişken</span>
+          <div class="tbox" id="tbox">temp –</div>
+          <span class="why" id="tempwhy"></span>
+        </div>
+        <div class="legend">
+          <span><i class="sw wait"></i>karşılaştırılan çift (j ve j+1)</span>
+          <span><i class="sw" style="background:var(--cnt-soft);border-color:var(--cnt)"></i>yazılan hücre</span>
+          <span><i class="sw done"></i>sona yerleşti (kesinleşti)</span>
+        </div>
+      </section>
+      <section class="card">
+        <p class="label">Sayaçlar</p>
+        <div class="stats">
+          <div class="stat"><b id="s-cmp">0</b><span>karşılaştırma (a[j] &gt; a[j+1])</span></div>
+          <div class="stat"><b id="s-swap">0</b><span>swap (yer değiştirme)</span></div>
+          <div class="stat"><b id="s-pass">0</b><span>tamamlanan tur</span></div>
+        </div>
+        <p class="cellnote" id="cmpnote"></p>
+      </section>
+      <section class="card">
+        <p class="label">Inversion (ters çift) sayacı</p>
+        <div class="chips" id="inv"></div>
+        <p class="cellnote" id="invnote"></p>
+      </section>
+      <section class="card">
+        <p class="label">Tur tablosu</p>
+        <div class="tbl"><table id="tbl"></table></div>
+      </section>
+      <section class="card" id="calccard" hidden>
+        <p class="label">n elemanlı dizi için hesap</p>
+        <div class="calc">
+          <label for="nin">n =</label><input id="nin" type="number" min="2" max="100000" value="100">
+        </div>
+        <p class="calc-out" id="calc1"></p>
+        <p class="calc-out" id="calc2"></p>
+        <p class="calc-out" id="calc3"></p>
+        <p class="cellnote">Karşılaştırma sayısı dizinin dizilişine bağlı değildir, çünkü döngü sınırları yalnızca n ve i'ye bağlıdır. Yalnızca swap sayısı girdiye göre değişir.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="bar-ctl">
+  <div class="ctl">
+    <div class="slider"><input type="range" id="slider" min="0" value="0" aria-label="Adım"><span id="pos"></span></div>
+    <div class="btns">
+      <button id="reset">Başa dön</button>
+      <button id="prev">← Geri</button>
+      <button id="next" class="primary">İleri →</button>
+      <button id="play">▶ Oynat</button>
+      <button id="skipswap" title="Yer değiştirme satırlarını geç, sonraki karşılaştırmaya git">Swap'i geç</button>
+      <button id="skip" title="Şu anki turun sonuna ilerle">Turu bitir</button>
+      <span class="spacer"></span>
+      <label for="speed" style="font-size:0.85rem;color:var(--fg-soft)">Hız</label>
+      <select id="speed">
+        <option value="1200">Yavaş</option>
+        <option value="700" selected>Normal</option>
+        <option value="300">Hızlı</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var CODE = [
+    "for (int i = 0; i < n - 1; i++) {",
+    "  for (int j = 0; j < n - 1 - i; j++) {",
+    "    if (a[j] > a[j + 1]) {",
+    "      int temp = a[j];",
+    "      a[j] = a[j + 1];",
+    "      a[j + 1] = temp;",
+    "    }",
+    "  }",
+    "}"
+  ];
+
+  function mk(vals) { return vals.map(function (v) { return typeof v === "object" ? v : { v: v }; }); }
+  var SC = {
+    ab: {
+      arr: mk([7, 3, 9, 1, 5]),
+      q: "<code>a = [7, 3, 9, 1, 5]</code> dizisini klasik Bubble Sort ile artan sırada sırala. a) Her turdan sonra diziyi, tur başına karşılaştırma ve swap sayısını yaz. b) Girişteki inversion sayısını (i &lt; j iken a[i] &gt; a[j] olan çiftler) bul ve toplam swap sayısıyla karşılaştır.",
+      ans: function (r) {
+        return [
+          "<b>a)</b> " + r.passes.map(function (p) { return "Tur " + p.pass + ": <code>[" + p.arr.join(", ") + "]</code> (" + p.comps + " karşılaştırma, " + p.swaps + " swap)"; }).join("; ") + ".",
+          "<b>b)</b> Inversion'lar: " + r.inv.map(function (x) { return "<code>(" + x.label.replace(">", ", ") + ")</code>"; }).join(" ") + " = <b>" + r.inv.length + "</b>. Toplam swap de <b>" + r.swaps + "</b>: her komşu swap tam bir inversion'ı giderir, bu yüzden swap sayısı inversion sayısına eşittir.",
+          "Toplam: <b>" + r.passes.length + " tur</b> (her zaman n − 1), <b>" + r.comps + " karşılaştırma</b> (4 + 3 + 2 + 1). Son turda swap olmasa da kod bunu kontrol etmediği için tur yine yapılır."
+        ];
+      }
+    },
+    c1: {
+      arr: mk([2, 1, 3, 4, 5]),
+      q: "Klasik Bubble Sort <code>[2, 1, 3, 4, 5]</code> için kaç tur ve kaç karşılaştırma yapar?",
+      ans: function (r) {
+        return [
+          "Tur 1: 4 karşılaştırma, yalnızca <code>2 &gt; 1</code> için 1 swap: <code>[1, 2, 3, 4, 5]</code>. Dizi artık sıralı.",
+          "Ama kodda bunu fark eden bir kontrol yok: tur 2, 3 ve 4 de sırasıyla 3, 2 ve 1 karşılaştırma yapar, hiç swap olmaz.",
+          "Toplam: <b>" + r.passes.length + " tur, " + r.comps + " karşılaştırma</b> (4 + 3 + 2 + 1), <b>" + r.swaps + " swap</b>. (Bayraklı sürüm 2 tur ve 7 karşılaştırmayla biterdi.)"
+        ];
+      }
+    },
+    c2: {
+      arr: mk([1, 2, 3, 4, 5]),
+      q: "Klasik Bubble Sort <code>[1, 2, 3, 4, 5]</code> (zaten sıralı) için kaç tur ve kaç karşılaştırma yapar?",
+      ans: function (r) {
+        return [
+          "Hiçbir karşılaştırmada <code>a[j] &gt; a[j+1]</code> doğru çıkmaz, swap olmaz. Ama döngü sınırları yalnızca n ve i'ye bağlı olduğu için tüm turlar yine çalışır.",
+          "Toplam: <b>" + r.passes.length + " tur, " + r.comps + " karşılaştırma</b> (4 + 3 + 2 + 1 = n(n−1)/2), <b>" + r.swaps + " swap</b>. (Bayraklı sürüm 1 tur ve 4 karşılaştırmayla biterdi.)"
+        ];
+      }
+    },
+    d1: {
+      arr: mk([{ v: 2, t: "a" }, { v: 2, t: "b" }, { v: 1 }]),
+      q: "Bubble Sort kararlı (stable) mıdır? Neden? En iyi, ortalama ve en kötü durum karmaşıklığını yaz. (Önce <code>[2a, 2b, 1]</code> ile eşit anahtarların sırasına bak.)",
+      ans: function (r) {
+        return [
+          "<b>Kararlıdır.</b> Swap koşulu <code>a[j] &gt; a[j+1]</code> katı büyüklüktür: 2a ile 2b karşılaştırılırken <code>2 &gt; 2</code> yanlış olduğu için eşit elemanlar hiç yer değiştirmez ve yalnızca komşular yer değiştirdiği için birbirini atlayamazlar. Son sıra <code>[1, 2a, 2b]</code>: 2a hâlâ 2b'den önce.",
+          "<b>Karmaşıklık:</b> karşılaştırma sayısı her durumda n(n−1)/2'dir. En iyi (sıralı), ortalama ve en kötü (ters sıralı) durumun hepsi <b>O(n²)</b>. Sıralı dizide swap sayısı 0, ters sıralı dizide n(n−1)/2 olur ama karşılaştırmalar aynı kalır. (Bu örnekte n = 3: " + r.comps + " karşılaştırma, " + r.swaps + " swap.) Ek bellek O(1)."
+        ];
+      }
+    },
+    d2: {
+      arr: mk([5, 4, 3, 2, 1]),
+      q: "En kötü durum: ters sıralı <code>[5, 4, 3, 2, 1]</code> dizisinde klasik Bubble Sort kaç karşılaştırma ve kaç swap yapar?",
+      ans: function (r) {
+        return [
+          "Her komşu çift ters olduğu için her karşılaştırma bir swap üretir: <b>" + r.comps + " karşılaştırma ve " + r.swaps + " swap</b> (= n(n−1)/2 = inversion sayısı).",
+          "Her tur en büyüğü sağa taşır: 5, 4, 3, 2 sırasıyla son konumlarına gider. Sonuç <b>O(n²)</b>."
+        ];
+      }
+    }
+  };
+
+  function sim(init) {
+    var a = init.map(function (x, k) { return { v: x.v, t: x.t || "", id: k }; });
+    var n = a.length, comps = 0, swaps = 0, passesDone = 0, tail = 0, temp = null, passes = [], removed = [], steps = [];
+    function lab(x) { return x.v + (x.t || ""); }
+    var inv = [];
+    for (var p = 0; p < n; p++) for (var q = p + 1; q < n; q++) if (a[p].v > a[q].v) inv.push({ a: p, b: q, label: lab(a[p]) + ">" + lab(a[q]) });
+    function snap(kind, line, text, note, ex) {
+      var s = {
+        kind: kind, line: line, text: text, note: note || "",
+        arr: a.map(function (x) { return { v: x.v, t: x.t, id: x.id }; }),
+        comps: comps, swaps: swaps, passesDone: passesDone, tail: tail,
+        temp: temp ? { v: temp.v, t: temp.t } : null,
+        passes: passes.slice(), removed: removed.slice(), j: null, swapped: null, curPass: null
+      };
+      for (var k in ex) s[k] = ex[k];
+      steps.push(s);
+    }
+    for (var i = 0; i < n - 1; i++) {
+      var pc = 0, ps = 0, last = n - 2 - i;
+      temp = null;
+      snap("passstart", 0, "Tur " + (i + 1) + " başlıyor: i = " + i + ". Son " + i + " eleman zaten yerinde. j, 0'dan " + last + "'e kadar gidip komşu çiftleri (a[j], a[j+1]) karşılaştıracak. Tur sonunda en büyük eleman a[" + (n - 1 - i) + "] konumuna yerleşecek.", "i = " + i, { curPass: i });
+      for (var j = 0; j <= last; j++) {
+        comps++; pc++;
+        var gt = a[j].v > a[j + 1].v;
+        snap("cmp", 2, "j = " + j + ": a[" + j + "] = " + lab(a[j]) + " ile a[" + (j + 1) + "] = " + lab(a[j + 1]) + " karşılaştırılıyor. " + a[j].v + " > " + a[j + 1].v + " mi? " + (gt ? "Evet, sıra ters: yer değiştirilecek." : (a[j].v === a[j + 1].v ? "Hayır (eşit, büyük değil): dokunulmaz." : "Hayır, sıra doğru: dokunulmaz.")) + " Bu " + comps + ". karşılaştırma.", gt ? "evet" : "hayır", { j: j, curPass: i });
+        if (gt) {
+          var x = a[j], y = a[j + 1];
+          temp = { v: x.v, t: x.t };
+          snap("swap1", 3, "temp = a[" + j + "]: a[" + j + "] = " + lab(x) + " temp'e yedeklendi. Dizi henüz değişmedi.", "temp = " + lab(x), { j: j, swapped: [], curPass: i });
+          a[j] = { v: y.v, t: y.t, id: y.id };
+          snap("swap2", 4, "a[" + j + "] = a[" + (j + 1) + "]: " + lab(y) + " değeri a[" + j + "]'nin üstüne yazıldı. " + lab(x) + " şimdilik yalnızca temp'te.", "a[" + j + "] = " + lab(y), { j: j, swapped: [j], curPass: i });
+          a[j + 1] = { v: temp.v, t: temp.t, id: x.id };
+          swaps++; ps++;
+          removed.push(x.id + "-" + y.id);
+          snap("swap3", 5, "a[" + (j + 1) + "] = temp: " + lab(x) + " değeri a[" + (j + 1) + "]'e yazıldı. Yer değiştirme tamam: [" + a.map(lab).join(", ") + "]. Bu swap bir inversion'ı (" + lab(x) + ", " + lab(y) + ") giderdi.", "a[" + (j + 1) + "] = " + lab(x), { j: j, swapped: [j + 1], curPass: i });
+          temp = null;
+        }
+      }
+      tail = i + 1; passesDone = i + 1;
+      passes.push({ pass: i + 1, comps: pc, swaps: ps, arr: a.map(lab) });
+      var msg = "j döngüsü bitti, tur " + (i + 1) + " tamam: [" + a.map(lab).join(", ") + "]. En büyük " + lab(a[n - 1 - i]) + " a[" + (n - 1 - i) + "] konumuna yerleşti.";
+      if (ps === 0 && i < n - 2) msg += " Bu turda hiç swap olmadı, yani dizi zaten sıralı. Ama kodda bunu kontrol eden bir şey yok, kalan turlar da çalışacak.";
+      else if (i < n - 2) msg += " i++ ile sonraki tura geçilir.";
+      else msg += " Dış döngü de bitti.";
+      snap("passend", 7, msg, "tur " + (i + 1) + " bitti", { curPass: i });
+    }
+    tail = n; temp = null;
+    snap("final", -1, "Dizi sıralandı: [" + a.map(lab).join(", ") + "]. Toplam " + passes.length + " tur, " + comps + " karşılaştırma, " + swaps + " swap.", "");
+    return { steps: steps, inv: inv, passes: passes, comps: comps, swaps: swaps };
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var S = null, steps = [], cur = 0, timer = null, N = 0;
+  var codeLines = [];
+  CODE.forEach(function (txt, i) {
+    var row = document.createElement("div"); row.className = "cl";
+    var no = document.createElement("span"); no.className = "no"; no.textContent = i + 1;
+    var tx = document.createElement("span"); tx.textContent = txt;
+    var nt = document.createElement("span"); nt.className = "note";
+    row.appendChild(no); row.appendChild(tx); row.appendChild(nt);
+    $("code").appendChild(row);
+    codeLines.push({ row: row, note: nt });
+  });
+  var slider = $("slider");
+
+  function load(key) {
+    stop();
+    S = sim(SC[key].arr);
+    steps = S.steps;
+    N = SC[key].arr.length;
+    slider.max = steps.length - 1;
+    cur = 0;
+    document.querySelectorAll("#seg button").forEach(function (b) { b.setAttribute("aria-selected", b.dataset.sc === key ? "true" : "false"); });
+    $("qtext").innerHTML = SC[key].q;
+    $("ans").innerHTML = SC[key].ans(S).map(function (t) { return "<li>" + t + "</li>"; }).join("");
+    $("calccard").hidden = key !== "d1" && key !== "d2";
+    updateCalc();
+    render();
+  }
+
+  function updateCalc() {
+    var n = parseInt($("nin").value, 10);
+    if (!(n >= 2)) { $("calc1").textContent = ""; $("calc2").textContent = ""; $("calc3").textContent = ""; return; }
+    var m = (n * (n - 1) / 2).toLocaleString("tr-TR");
+    $("calc1").innerHTML = "Karşılaştırma (her durumda): n(n−1)/2 = <b>" + m + "</b>";
+    $("calc2").innerHTML = "En iyi durum (sıralı): <b>" + m + "</b> karşılaştırma, <b>0</b> swap → O(n²)";
+    $("calc3").innerHTML = "En kötü durum (ters sıralı): <b>" + m + "</b> karşılaştırma, <b>" + m + "</b> swap → O(n²)";
+  }
+  $("nin").oninput = updateCalc;
+
+  function render() {
+    var s = steps[cur];
+    var inSwap = s.kind === "swap1" || s.kind === "swap2" || s.kind === "swap3";
+    codeLines.forEach(function (c, i) {
+      var on = i === s.line;
+      c.row.className = "cl" + (on ? " on" : "");
+      c.note.textContent = on ? s.note : "";
+    });
+    $("running").innerHTML = s.kind === "final" ? "Algoritma bitti." : "Şu an: <b>tur " + (s.curPass + 1) + "</b> / " + (N - 1) + ", i = " + s.curPass + (s.j !== null ? ", j = " + s.j : "");
+    $("stepno").textContent = "Adım " + (cur + 1) + " / " + steps.length;
+    $("explain").textContent = s.text;
+
+    var arr = $("arr"); arr.innerHTML = "";
+    s.arr.forEach(function (x, idx) {
+      var cls = "tile";
+      if (idx >= N - s.tail) cls += " sorted";
+      var pair = s.j !== null && (idx === s.j || idx === s.j + 1) && s.kind !== "passend" && s.kind !== "passstart" && s.kind !== "final";
+      if (pair && !(s.swapped && s.swapped.indexOf(idx) >= 0)) cls += " isj";
+      if (s.swapped && s.swapped.indexOf(idx) >= 0) cls += " swapped";
+      var mkr = "";
+      if (pair) mkr = idx === s.j ? "j" : "j+1";
+      var d = document.createElement("div");
+      d.className = cls;
+      d.innerHTML = "<div class=\"box\">" + x.v + (x.t ? "<small class=\"t" + x.t + "\">" + x.t + "</small>" : "") + "</div><div class=\"ix\">[" + idx + "]</div><div class=\"mk\">" + mkr + "</div>";
+      arr.appendChild(d);
+    });
+
+    var tb0 = $("tbox");
+    tb0.textContent = s.temp ? "temp = " + s.temp.v + (s.temp.t || "") : "temp –";
+    tb0.className = "tbox" + (s.temp ? " set" : "") + (s.kind === "swap1" ? " flash" : "");
+    $("tempwhy").textContent = s.temp ? "temp yer değiştirme bitene kadar ilk değeri saklıyor" : "temp yalnızca swap bloğunun içinde var";
+
+    $("s-cmp").textContent = s.comps;
+    $("s-swap").textContent = s.swaps;
+    $("s-pass").textContent = s.passesDone;
+    var maxc = N * (N - 1) / 2;
+    $("cmpnote").textContent = "Her tur n−1−i karşılaştırma yapar: " + Array.apply(null, Array(N - 1)).map(function (_, i) { return N - 1 - i; }).join(" + ") + " = " + maxc + ". Kontrol olmadığı için bu sayı her zaman aynı. Şu ana kadar: " + s.comps + "/" + maxc + ".";
+
+    var inv = $("inv"); inv.innerHTML = "";
+    var fixed = 0;
+    S.inv.forEach(function (x) {
+      var done = s.removed.indexOf(x.a + "-" + x.b) >= 0;
+      if (done) fixed++;
+      var c = document.createElement("span");
+      c.className = "chip" + (done ? " fixed" : "");
+      c.textContent = "(" + x.label.replace(">", ", ") + ")";
+      inv.appendChild(c);
+    });
+    if (!S.inv.length) inv.innerHTML = "<span class=\"msg\">Bu dizide hiç inversion yok (zaten sıralı).</span>";
+    $("invnote").textContent = "Başlangıçta " + S.inv.length + " inversion var. Giderilen: " + fixed + ", kalan: " + (S.inv.length - fixed) + ". Yapılan swap: " + s.swaps + ". Her swap tam bir inversion'ı giderir.";
+
+    var tb = "<tr><th>Tur</th><th>Karşılaştırma</th><th>Swap</th><th>Tur sonu dizi</th></tr>";
+    for (var p = 0; p < N - 1; p++) {
+      var done = s.passes[p];
+      if (done) {
+        tb += "<tr" + (s.curPass === p && s.kind === "passend" ? " class=\"cur\"" : "") + "><td>" + done.pass + "</td><td>" + done.comps + "</td><td>" + done.swaps + "</td><td class=\"mono\">[" + done.arr.join(", ") + "]</td></tr>";
+      } else {
+        tb += "<tr class=\"pending" + (s.curPass === p ? " cur" : "") + "\"><td>" + (p + 1) + "</td><td>" + (N - 1 - p) + " olacak</td><td>–</td><td>–</td></tr>";
+      }
+    }
+    $("tbl").innerHTML = tb;
+
+    slider.value = cur;
+    $("pos").textContent = (cur + 1) + "/" + steps.length;
+    $("prev").disabled = cur === 0; $("reset").disabled = cur === 0;
+    var atEnd = cur === steps.length - 1;
+    $("next").disabled = atEnd;
+    $("skip").disabled = atEnd;
+    $("skipswap").disabled = !inSwap;
+    if (atEnd) stop();
+  }
+
+  function go(i) { cur = Math.max(0, Math.min(steps.length - 1, i)); render(); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } $("play").textContent = "▶ Oynat"; }
+  function play() {
+    if (cur === steps.length - 1) cur = 0;
+    $("play").textContent = "⏸ Duraklat";
+    timer = setInterval(function () { go(cur + 1); }, parseInt($("speed").value, 10));
+    render();
+  }
+  $("next").onclick = function () { stop(); go(cur + 1); };
+  $("prev").onclick = function () { stop(); go(cur - 1); };
+  $("reset").onclick = function () { stop(); go(0); };
+  $("play").onclick = function () { timer ? stop() : play(); };
+  $("skipswap").onclick = function () {
+    stop();
+    var j = cur + 1;
+    while (steps[j] && ["swap1", "swap2", "swap3"].indexOf(steps[j].kind) >= 0) j++;
+    go(j);
+  };
+  $("skip").onclick = function () {
+    stop();
+    var j = cur + 1;
+    while (steps[j] && steps[j].kind !== "passend" && steps[j].kind !== "final") j++;
+    go(j);
+  };
+  $("speed").onchange = function () { if (timer) { stop(); play(); } };
+  slider.oninput = function () { stop(); go(parseInt(slider.value, 10)); };
+  document.querySelectorAll("#seg button").forEach(function (b) { b.onclick = function () { load(b.dataset.sc); }; });
+  document.addEventListener("keydown", function (e) {
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); stop(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); stop(); go(cur - 1); }
+  });
+
+  load("ab");
+})();
+</script>
+
+</body></html>

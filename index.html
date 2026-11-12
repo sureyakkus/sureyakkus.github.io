@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Algoritmalar Laboratuvarı</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f5f7fb;
+      color: #16233b;
+      font: 1rem/1.5 Inter, system-ui, sans-serif;
+    }
+    main {
+      width: min(100% - 2rem, 66rem);
+      margin: 0 auto;
+      padding: clamp(2rem, 7vw, 5rem) 0;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 6vw, 3.8rem);
+      letter-spacing: -.05em;
+      line-height: 1.1;
+    }
+    header p { margin: 1rem 0 2.5rem; color: #45546d; }
+    section + section { margin-top: 2rem; }
+    h2 { margin: 0 0 .75rem; font-size: 1.2rem; }
+    ul {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+      gap: .7rem;
+      padding: 0;
+      margin: 0;
+    }
+    li { display: flex; }
+    a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      width: 100%;
+      padding: .95rem 1rem;
+      border: 1px solid #d4ddeb;
+      border-radius: .65rem;
+      background: white;
+      color: #17366a;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    a:hover, a:focus-visible { background: #eaf1ff; border-color: #426fc8; }
+    a:focus-visible { outline: 3px solid #426fc8; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Algoritmalar Laboratuvarı</h1>
+      <p>Adım adım incelemek istediğin uygulamayı seç.</p>
+    </header>
+
+    <!-- Yeni uygulama eklemek için ilgili bölümde bir li satırını kopyala.
+         href içine dosyanın tam adını, bağlantı metnine ekranda görünecek adı yaz.
+         Uygulama dosyalarını index.html ile aynı klasöre yükle. -->
+    <section>
+      <h2>Graf Algoritmaları</h2>
+      <ul>
+        <li><a href="./DFS ve BFS Görselleştirici.html">DFS ve BFS Görselleştirici <span aria-hidden="true">→</span></a></li>
+        <li><a href="./Kruskal ve Prim Görselleştirici.html">Kruskal ve Prim Görselleştirici <span aria-hidden="true">→</span></a></li>
+        <li><a href="./Topolojik Sıralama Görselleştirici.html">Topolojik Sıralama Görselleştirici <span aria-hidden="true">→</span></a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Sıralama Algoritmaları</h2>
+      <ul>
+        <li><a href="./Insertion Sort Adım Adım (1).html">Insertion Sort Adım Adım <span aria-hidden="true">→</span></a></li>
+        <li><a href="./Insertion Sort Hatası.html">Insertion Sort Hatası <span aria-hidden="true">→</span></a></li>
+        <li><a href="./Klasik Bubble Sort Adım Adım.html">Klasik Bubble Sort Adım Adım <span aria-hidden="true">→</span></a></li>
+        <li><a href="./Merge Sort Adım Adım.html">Merge Sort Adım Adım <span aria-hidden="true">→</span></a></li>
+        <li><a href="./Selection Sort Adım Adım.html">Selection Sort Adım Adım <span aria-hidden="true">→</span></a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Özyineleme ve Zaman Analizi</h2>
+      <ul>
+        <li><a href="./halve Çağrı Zinciri.html">halve Çağrı Zinciri <span aria-hidden="true">→</span></a></li>
+        <li><a href="./Özyineleme ve T(n).html">Özyineleme ve T(n) <span aria-hidden="true">→</span></a></li>
+        <li><a href="./process Çağrı Ağacı.html">process Çağrı Ağacı <span aria-hidden="true">→</span></a></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

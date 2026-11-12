@@ -1,0 +1,657 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Insertion Sort Adım Adım</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sol sütunda kod + açıklama, sağ sütunda çağrı ağacı + yığın; alt çubukta oynatma kontrolleri. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --surface-2: #e9eef2;
+  --fg: #16212b;
+  --fg-soft: #51606d;
+  --line: #cfd8e0;
+  --accent: #0b6e8a;
+  --accent-soft: #d6eef5;
+  --cnt: #b45309;
+  --cnt-soft: #fdebd2;
+  --done: #6b7a88;
+  --code-bg: #0f1c26;
+  --code-fg: #d8e4ee;
+  --code-dim: #6d8497;
+  --code-hl: #1c3a4d;
+  --code-hl-edge: #4fc3e0;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1419; --surface: #151f27; --surface-2: #1d2a34; --fg: #e4ecf2; --fg-soft: #93a4b3;
+    --line: #2b3b47; --accent: #4fc3e0; --accent-soft: #14323f; --cnt: #f5b14a; --cnt-soft: #3a2a10;
+    --done: #8fa1b0; --code-bg: #0a1117; --code-fg: #d8e4ee; --code-dim: #6d8497; --code-hl: #17384a; --code-hl-edge: #4fc3e0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1419; --surface: #151f27; --surface-2: #1d2a34; --fg: #e4ecf2; --fg-soft: #93a4b3;
+  --line: #2b3b47; --accent: #4fc3e0; --accent-soft: #14323f; --cnt: #f5b14a; --cnt-soft: #3a2a10;
+  --done: #8fa1b0; --code-bg: #0a1117; --code-fg: #d8e4ee; --code-dim: #6d8497; --code-hl: #17384a; --code-hl-edge: #4fc3e0;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 20px 110px; }
+* { box-sizing: border-box; }
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-size: 1.5rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+.lede { margin: 4px 0 0; color: var(--fg-soft); max-width: 70ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+.label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-soft); font-weight: 600; margin: 0 0 10px; }
+
+/* kod */
+.code { background: var(--code-bg); border-radius: 8px; padding: 10px 0; font-family: var(--font-mono); font-size: 0.86rem; overflow-x: auto; }
+.cl { display: flex; align-items: center; gap: 10px; padding: 3px 12px 3px 10px; border-left: 3px solid transparent; color: var(--code-fg); white-space: pre; min-width: max-content; }
+.cl .no { color: var(--code-dim); width: 1.2em; text-align: right; user-select: none; }
+.cl .note { margin-left: auto; padding-left: 18px; color: var(--code-hl-edge); font-size: 0.78rem; }
+.cl .note.y { color: #6ee7a0; }
+.cl .note.n { color: #ff9b8f; }
+.cl .note { font-weight: 500; }
+.cl.on { background: var(--code-hl); border-left-color: var(--code-hl-edge); }
+.running { margin: 0 0 8px; font-size: 0.9rem; color: var(--fg-soft); }
+.running b { color: var(--fg); font-family: var(--font-mono); font-weight: 600; }
+
+.explain { font-size: 1.02rem; min-height: 4.6em; margin: 0; }
+.stepno { font-family: var(--font-mono); font-size: 0.8rem; color: var(--fg-soft); margin-bottom: 6px; display: block; }
+
+/* cnt */
+.cntrow { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.cnt { font-family: var(--font-mono); font-weight: 600; font-size: 3rem; line-height: 1; color: var(--cnt); font-variant-numeric: tabular-nums; background: var(--cnt-soft); border-radius: 8px; padding: 8px 16px; min-width: 2.2em; text-align: center; }
+.cnt.flash { animation: pop 0.35s ease-out; }
+@keyframes pop { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .cnt.flash { animation: none; } }
+.cntmeta { color: var(--fg-soft); font-size: 0.9rem; flex: 1; min-width: 12em; }
+.cells { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+.cell { width: 26px; height: 26px; border-radius: 5px; border: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.7rem; display: grid; place-items: center; color: var(--fg-soft); font-variant-numeric: tabular-nums; }
+.cell.fill { background: var(--cnt); border-color: var(--cnt); color: var(--bg); font-weight: 600; }
+.cellnote { font-size: 0.82rem; color: var(--fg-soft); margin: 8px 0 0; }
+
+/* ağaç */
+.treebox { overflow-x: auto; }
+svg.tree { display: block; min-width: 520px; width: 100%; height: auto; }
+.tree text { font-family: var(--font-mono); fill: var(--fg); }
+.tree .lvl { font-family: var(--font-body); font-size: 11px; fill: var(--fg-soft); }
+.tree .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+.tree .edge.live { stroke: var(--accent); }
+.tree .nrect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.tree .nn { font-size: 15px; font-weight: 600; text-anchor: middle; }
+.tree .nw { font-size: 10.5px; text-anchor: middle; fill: var(--fg-soft); }
+.tree .node.wait .nrect { stroke: var(--accent); stroke-dasharray: none; stroke-width: 2; fill: var(--accent-soft); }
+.tree .node.active .nrect { stroke: var(--accent); stroke-dasharray: none; fill: var(--accent); stroke-width: 2; }
+.tree .node.active text { fill: #ffffff; }
+:root[data-theme="dark"] .tree .node.active text { fill: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tree .node.active text { fill: #06222b; } }
+.tree .node.done .nrect { stroke: var(--done); stroke-dasharray: none; fill: var(--surface-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; font-size: 0.8rem; color: var(--fg-soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 12px; border-radius: 3px; border: 1.5px solid var(--line); display: inline-block; }
+.sw.idle { border-style: dashed; background: var(--surface); }
+.sw.active { background: var(--accent); border-color: var(--accent); }
+.sw.wait { background: var(--accent-soft); border-color: var(--accent); }
+.sw.done { background: var(--surface-2); border-color: var(--done); }
+
+/* yığın */
+.stack { display: flex; flex-direction: column-reverse; gap: 6px; min-height: 44px; }
+.frame { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border: 1.5px solid var(--accent); border-radius: 7px; padding: 6px 10px; background: var(--accent-soft); font-size: 0.88rem; }
+.frame code { font-family: var(--font-mono); font-weight: 600; }
+.frame.top { background: var(--accent); color: #fff; }
+:root[data-theme="dark"] .frame.top { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .frame.top { color: #06222b; } }
+.empty { color: var(--fg-soft); font-size: 0.9rem; padding: 6px 2px; }
+
+/* seviyeler */
+.levels { display: flex; flex-direction: column; gap: 10px; }
+.lv { display: grid; grid-template-columns: 5.5em minmax(0, 1fr) 4.6em; gap: 10px; align-items: center; font-size: 0.88rem; }
+.bar { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--cnt); width: 0; transition: width 0.15s; }
+.lv .v { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.sum { margin: 12px 0 0; font-size: 0.92rem; color: var(--fg-soft); }
+.sum b { color: var(--cnt); font-family: var(--font-mono); }
+
+/* kontroller */
+.bar-ctl { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 5; }
+.ctl { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button, select { font: inherit; color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 12px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] button.primary { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #06222b; } }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.slider { display: flex; align-items: center; gap: 10px; }
+.slider input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.slider span { font-family: var(--font-mono); font-size: 0.82rem; color: var(--fg-soft); white-space: nowrap; }
+.spacer { flex: 1; }
+
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg button { padding: 8px 14px; }
+.seg button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] .seg button[aria-selected="true"] { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg button[aria-selected="true"] { color: #06222b; } }
+.qtext { margin: 0 0 10px; font-size: 0.95rem; }
+.ans { margin: 0; padding-left: 1.1em; font-size: 0.93rem; display: flex; flex-direction: column; gap: 6px; }
+.ans li { padding-left: 2px; }
+.ans code, .qtext code { font-family: var(--font-mono); font-size: 0.86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.arr { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; }
+.box { width: 62px; height: 62px; border-radius: 9px; border: 2px solid var(--line); background: var(--surface); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 1.35rem; position: relative; font-variant-numeric: tabular-nums; }
+.box small { font-size: 0.7rem; font-weight: 600; position: absolute; right: 6px; bottom: 3px; }
+.box small.ta { color: var(--accent); } .box small.tb { color: var(--cnt); }
+.tile.sorted .box { background: var(--surface-2); border-color: var(--done); color: var(--fg-soft); }
+.tile.isi .box { border-color: var(--accent); }
+.tile.isj .box { background: var(--accent-soft); border-color: var(--accent); }
+.tile.ismin .box { background: var(--cnt-soft); border-color: var(--cnt); color: var(--cnt); }
+.tile.swapped .box { background: var(--cnt-soft); border-color: var(--cnt); animation: pop 0.35s ease-out; }
+.tile .ix { font-family: var(--font-mono); font-size: 0.75rem; color: var(--fg-soft); }
+.tile .mk { font-family: var(--font-mono); font-size: 0.72rem; min-height: 2.6em; text-align: center; line-height: 1.25; color: var(--accent); font-weight: 600; }
+.tile .mk .m { color: var(--cnt); display: block; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 420px) { .stats { grid-template-columns: minmax(0, 1fr); } }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font-family: var(--font-mono); font-size: 1.9rem; line-height: 1.1; color: var(--cnt); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.8rem; color: var(--fg-soft); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; min-width: 440px; }
+th, td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; }
+th { background: var(--surface-2); font-weight: 600; }
+td.mono { font-family: var(--font-mono); }
+tr.cur td { background: var(--accent-soft); }
+tr.pending td { color: var(--fg-soft); }
+.calc { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 8px; }
+.calc input { width: 6em; font: inherit; font-family: var(--font-mono); padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); }
+.calc-out { font-family: var(--font-mono); font-size: 0.95rem; margin: 4px 0; }
+.calc-out b { color: var(--cnt); }
+.tempslot { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-family: var(--font-mono); font-size: 0.85rem; color: var(--fg-soft); flex-wrap: wrap; }
+.tbox { min-width: 62px; height: 48px; padding: 0 10px; border-radius: 9px; border: 2px dashed var(--line); background: var(--surface); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: 1.15rem; color: var(--fg-soft); }
+.tbox.set { border-style: solid; border-color: var(--cnt); background: var(--cnt-soft); color: var(--cnt); }
+.tbox.flash { animation: pop 0.35s ease-out; }
+.tempslot .why { font-family: var(--font-body); font-size: 0.82rem; }
+td.tcode { font-family: var(--font-mono); text-align: left; white-space: nowrap; }
+td.hl { background: var(--cnt-soft); font-weight: 600; color: var(--cnt); }
+.msg { margin: 0; color: var(--fg-soft); font-size: 0.9rem; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--font-mono); font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--fg); }
+.chip.fixed { text-decoration: line-through; color: var(--fg-soft); background: var(--surface-2); border-color: var(--done); }
+.chip.on { background: var(--cnt-soft); border-color: var(--cnt); color: var(--cnt); font-weight: 600; }
+
+.tile.hole .box { border-style: dashed; border-color: var(--cnt); }
+.tile.hole.sorted .box { border-style: dashed; border-color: var(--cnt); }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+:root[data-theme="dark"] .seg button[aria-pressed="true"] { color: #06222b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #06222b; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Soru 8: Insertion Sort adım adım</h1>
+    <p class="lede">Temel fikir: dizinin solunda sıralı bir bölge büyütülür. Her turda sıradaki eleman, kendinden büyük elemanların soluna kadar geriye doğru ilerleyip doğru yerine oturur. Optimizasyon yok, en yalın hali. İleri düğmesiyle (veya → tuşuyla) her satırı tek tek çalıştır.</p>
+  </header>
+
+  <div class="seg" role="tablist" aria-label="Soru parçası" id="seg">
+    <button role="tab" id="tab-ab" aria-selected="true" data-sc="ab">a–b: [12, 4, 9, 2, 7]</button>
+    <button role="tab" id="tab-c1" aria-selected="false" data-sc="c1">c: sıralı, n = 6</button>
+    <button role="tab" id="tab-c2" aria-selected="false" data-sc="c2">c: ters sıralı, n = 6</button>
+    <button role="tab" id="tab-d" aria-selected="false" data-sc="d">d: boşlukları doldur</button>
+  </div>
+  <div class="seg" id="variant" role="group" aria-label="Kod biçimi">
+    <button data-v="swap" aria-pressed="true">Kod: temp ile swap</button>
+    <button data-v="key" aria-pressed="false">Kod: key ile kaydırma (Lab 3'teki)</button>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card" aria-label="Kod">
+        <p class="label">Kod</p>
+        <p class="running" id="running"></p>
+        <div class="code" id="code"></div>
+      </section>
+      <section class="card" aria-live="polite">
+        <p class="label">Bu adımda ne oluyor</p>
+        <span class="stepno" id="stepno"></span>
+        <p class="explain" id="explain"></p>
+      </section>
+      <section class="card">
+        <p class="label">Soru ve cevap</p>
+        <p class="qtext" id="qtext"></p>
+        <ul class="ans" id="ans"></ul>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <p class="label">Dizi</p>
+        <div class="arr" id="arr"></div>
+        <div class="tempslot">
+          <span>değişkenler</span>
+          <div class="tbox" id="tbox">–</div>
+          <span class="chip" id="jchip">j = –</span>
+          <span class="why" id="tempwhy"></span>
+        </div>
+        <div class="legend">
+          <span><i class="sw done"></i>işlenen bölge a[0…i]</span>
+          <span><i class="sw wait"></i>karşılaştırılan elemanlar</span>
+          <span><i class="sw" style="background:var(--cnt-soft);border-color:var(--cnt)"></i>sıraya yerleştirilen eleman / yazılan hücre</span>
+        </div>
+      </section>
+      <section class="card">
+        <p class="label">Sayaçlar</p>
+        <div class="stats">
+          <div class="stat"><b id="s-cmp">0</b><span>karşılaştırma</span></div>
+          <div class="stat"><b id="s-mov">0</b><span id="s-movl">swap</span></div>
+          <div class="stat"><b id="s-pass">0</b><span>tamamlanan tur</span></div>
+        </div>
+        <p class="cellnote" id="cmpnote"></p>
+      </section>
+      <section class="card">
+        <p class="label">Inversion (ters çift) sayacı</p>
+        <div class="chips" id="inv"></div>
+        <p class="cellnote" id="invnote"></p>
+      </section>
+      <section class="card">
+        <p class="label">Tur tablosu</p>
+        <div class="tbl"><table id="tbl"></table></div>
+      </section>
+      <section class="card" id="calccard" hidden>
+        <p class="label">n elemanlı dizi için hesap</p>
+        <div class="calc">
+          <label for="nin">n =</label><input id="nin" type="number" min="2" max="100000" value="100">
+        </div>
+        <p class="calc-out" id="calc1"></p>
+        <p class="calc-out" id="calc2"></p>
+        <p class="cellnote">Insertion Sort'ta iş miktarı girdinin ne kadar sıralı olduğuna bağlıdır: her eleman, kendinden büyük kaç elemanın solunda kaldıysa o kadar ilerler.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="bar-ctl">
+  <div class="ctl">
+    <div class="slider"><input type="range" id="slider" min="0" value="0" aria-label="Adım"><span id="pos"></span></div>
+    <div class="btns">
+      <button id="reset">Başa dön</button>
+      <button id="prev">← Geri</button>
+      <button id="next" class="primary">İleri →</button>
+      <button id="play">▶ Oynat</button>
+      <button id="skipmove" title="Yer değiştirme/kaydırma satırlarını geç, sonraki karşılaştırmaya git">Hamleyi geç</button>
+      <button id="skip" title="Şu anki turun sonuna ilerle">Turu bitir</button>
+      <span class="spacer"></span>
+      <label for="speed" style="font-size:0.85rem;color:var(--fg-soft)">Hız</label>
+      <select id="speed">
+        <option value="1200">Yavaş</option>
+        <option value="700" selected>Normal</option>
+        <option value="300">Hızlı</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var CODES = {
+    swap: [
+      "for (int i = 1; i < n; i++) {",
+      "  int j = i;",
+      "  while (j > 0 && a[j - 1] > a[j]) {",
+      "    int temp = a[j];",
+      "    a[j] = a[j - 1];",
+      "    a[j - 1] = temp;",
+      "    j--;",
+      "  }",
+      "}"
+    ],
+    key: [
+      "for (int i = 1; i < n; i++) {",
+      "  int key = a[i];",
+      "  int j = i - 1;",
+      "  while (j >= 0 && a[j] > key) {",
+      "    a[j + 1] = a[j];",
+      "    j--;",
+      "  }",
+      "  a[j + 1] = key;",
+      "}"
+    ]
+  };
+
+  function mk(vals) { return vals.map(function (v) { return { v: v }; }); }
+  var BLANK = "<pre style=\"margin:8px 0;padding:10px 12px;background:var(--code-bg);color:var(--code-fg);border-radius:8px;font-family:var(--font-mono);font-size:0.82rem;overflow-x:auto\">for (int i = 1; i &lt; n; i++) {\n  int key = a[i];\n  int j = <b style=\"color:var(--cnt)\">______</b>;                    // (1)\n  while (j &gt;= 0 &amp;&amp; a[j] <b style=\"color:var(--cnt)\">______</b> key) { // (2)\n    a[j + 1] = <b style=\"color:var(--cnt)\">______</b>;               // (3)\n    j--;\n  }\n  a[ <b style=\"color:var(--cnt)\">______</b> ] = key;                  // (4)\n}</pre>";
+
+  var SC = {
+    ab: {
+      arr: mk([12, 4, 9, 2, 7]),
+      q: "<code>a = [12, 4, 9, 2, 7]</code> dizisini Insertion Sort ile artan sırada sırala. a) Her tur için (i = 1 … 4) karşılaştırma ve " + "<span class=\"mvw\">swap</span> sayısını ve elemanı yerleştirdikten sonra diziyi yaz. b) Girişteki inversion sayısını bul ve toplam <span class=\"mvw\">swap</span> sayısıyla karşılaştır.",
+      ans: function (r, mv) {
+        return [
+          "<b>a)</b> " + r.passes.map(function (p) { return "key = " + p.key + ": " + p.comps + " karşılaştırma, " + p.moves + " " + mv + " → <code>[" + p.arr.join(", ") + "]</code>"; }).join("; ") + ".",
+          "<b>b)</b> Inversion'lar: " + r.inv.map(function (x) { return "<code>(" + x.label.replace(">", ", ") + ")</code>"; }).join(" ") + " = <b>" + r.inv.length + "</b>. Toplam " + mv + " de <b>" + r.moves + "</b>: her " + mv + " tam bir inversion'ı giderir.",
+          "Toplam: <b>" + r.comps + " karşılaştırma</b> ve <b>" + r.moves + " " + mv + "</b>. Karşılaştırma, " + mv + " sayısından tur sayısı kadar fazla olabilir: elemanın sola ilerlerken durduğu yerde bir karşılaştırma daha yapılır (a[j] ≤ eleman olduğu için)."
+        ];
+      }
+    },
+    c1: {
+      arr: mk([1, 2, 3, 4, 5, 6]),
+      q: "n = 6 için sıralı dizide Insertion Sort kaç karşılaştırma ve kaç <span class=\"mvw\">swap</span> yapar? Karmaşıklığı nedir?",
+      ans: function (r, mv) {
+        return [
+          "Her elemanın solundaki komşu zaten ondan küçük olduğu için her turda tek karşılaştırma yapılır ve hemen durulur: <b>" + r.comps + " karşılaştırma, " + r.moves + " " + mv + "</b> (n − 1 karşılaştırma).",
+          "Sıralı dizi en iyi durumdur: <b>O(n)</b>."
+        ];
+      }
+    },
+    c2: {
+      arr: mk([6, 5, 4, 3, 2, 1]),
+      q: "n = 6 için ters sıralı dizide Insertion Sort kaç karşılaştırma ve kaç <span class=\"mvw\">swap</span> yapar? Karmaşıklığı nedir?",
+      ans: function (r, mv) {
+        return [
+          "Tur i'de eleman en başa kadar ilerler: i karşılaştırma ve i " + mv + ". Toplam 1 + 2 + 3 + 4 + 5 = <b>" + r.comps + " karşılaştırma, " + r.moves + " " + mv + "</b> = n(n−1)/2.",
+          "Ters sıralı dizi en kötü durumdur: <b>O(n²)</b>. (Ortalama durum da O(n²).)"
+        ];
+      }
+    },
+    d: {
+      arr: mk([12, 4, 9, 2, 7]),
+      q: "Aşağıdaki Insertion Sort kodunun dört boşluğunu doldur. (Bu sekmede sayfa, boşluksuz tam kodu çalıştırır; kaydırma biçimi seçilidir.)",
+      ans: function () {
+        return [
+          BLANK,
+          "<b>(1)</b> <code>i - 1</code>: key = a[i] alındıktan sonra sıralı bölgenin son elemanı a[i − 1]'dir, karşılaştırma ondan başlar.",
+          "<b>(2)</b> <code>&gt;</code>: a[j] key'den büyükse sağa kaydırılır. <code>&gt;=</code> yazılsaydı eşit elemanlar da kaydırılırdı ve kararlılık bozulurdu.",
+          "<b>(3)</b> <code>a[j]</code>: <code>a[j + 1] = a[j]</code> büyük elemanı bir sağa kaydırır (key zaten ayrı saklı).",
+          "<b>(4)</b> <code>j + 1</code>: while bittiğinde a[j] key'den büyük değildir (veya j = −1), key'in yeri bir sağındaki hücre olan a[j + 1]'dir."
+        ];
+      }
+    }
+  };
+
+  function sim(init, variant) {
+    var a = init.map(function (x, k) { return { v: x.v, t: x.t || "", id: k }; });
+    var n = a.length, comps = 0, moves = 0, passesDone = 0, reg = 0, temp = null, key = null, j = 0, passes = [], removed = [], steps = [];
+    function lab(x) { return x.v + (x.t || ""); }
+    var inv = [];
+    for (var p = 0; p < n; p++) for (var q = p + 1; q < n; q++) if (a[p].v > a[q].v) inv.push({ a: p, b: q, label: lab(a[p]) + ">" + lab(a[q]) });
+    var mvw = variant === "swap" ? "swap" : "kaydırma";
+    function noteFor(kind) {
+      var Y = "y", Nn = "n", o = {};
+      if (variant === "swap") {
+        if (kind === "passstart") { o[0] = ["i = " + i + "  →  i < n ?  " + i + " < " + n + "  Evet", Y]; o[1] = ["j = " + j]; }
+        else if (kind === "stop0") o[2] = ["j > 0 ?  " + j + " > 0  Hayır  (a[j−1]'e bakılmaz)", Nn];
+        else if (kind === "cmp") o[2] = ["j > 0 ?  " + j + " > 0  Evet   &&   a[j−1] > a[j] ?  " + A.v + " > " + B.v + "  " + (gt ? "Evet" : "Hayır"), gt ? Y : Nn];
+        else if (kind === "swap1") o[3] = ["temp = " + B.v];
+        else if (kind === "swap2") o[4] = ["a[" + j + "] = " + A.v];
+        else if (kind === "swap3") o[5] = ["a[" + (j - 1) + "] = " + B.v];
+        else if (kind === "dec") o[6] = ["j = " + j];
+        else if (kind === "passend") { o[7] = ["while bitti"]; o[8] = ["i++  →  i = " + (i + 1) + ";  i < n ?  " + (i + 1) + " < " + n + "  " + (i + 1 < n ? "Evet" : "Hayır, for biter"), i + 1 < n ? Y : Nn]; }
+      } else {
+        if (kind === "keyset") { o[0] = ["i = " + i + "  →  i < n ?  " + i + " < " + n + "  Evet", Y]; o[1] = ["key = " + key.v]; }
+        else if (kind === "jinit") o[2] = ["j = " + j];
+        else if (kind === "stop0") o[3] = ["j >= 0 ?  " + j + " >= 0  Hayır  (a[j]'ye bakılmaz)", Nn];
+        else if (kind === "cmp") o[3] = ["j >= 0 ?  " + j + " >= 0  Evet   &&   a[j] > key ?  " + E.v + " > " + key.v + "  " + (gt2 ? "Evet" : "Hayır"), gt2 ? Y : Nn];
+        else if (kind === "shift") o[4] = ["a[" + (j + 1) + "] = " + E.v];
+        else if (kind === "dec") o[5] = ["j = " + j];
+        else if (kind === "passend") { o[7] = ["a[" + (j + 1) + "] = " + key.v]; o[8] = ["i++  →  i = " + (i + 1) + ";  i < n ?  " + (i + 1) + " < " + n + "  " + (i + 1 < n ? "Evet" : "Hayır, for biter"), i + 1 < n ? Y : Nn]; }
+      }
+      return o;
+    }
+    function snap(kind, lines, text, ex) {
+      var s = {
+        note: noteFor(kind),
+        kind: kind, lines: lines, text: text,
+        arr: a.map(function (x) { return { v: x.v, t: x.t, id: x.id }; }),
+        comps: comps, moves: moves, passesDone: passesDone, reg: reg,
+        temp: temp ? { v: temp.v, t: temp.t } : null, key: key ? { v: key.v, t: key.t } : null, j: j,
+        passes: passes.slice(), removed: removed.slice(),
+        cmp: [], write: [], hot: [], hole: null, marks: {}, curPass: null
+      };
+      for (var k in ex) s[k] = ex[k];
+      steps.push(s);
+    }
+    for (var i = 1; i < n; i++) {
+      var pc = 0, pm = 0, kv = lab(a[i]);
+      reg = i; temp = null; key = null;
+      if (variant === "swap") {
+        j = i;
+        snap("passstart", [0, 1], "Tur " + i + " (i = " + i + "): a[" + i + "] = " + kv + " sıralı bölgeye (a[0…" + (i - 1) + "]) eklenecek. j = i = " + j + ": " + kv + " şu an a[" + j + "] konumunda; kendinden büyük elemanlarla yer değiştirerek sola ilerleyecek.", { hot: [j], marks: (function () { var o = {}; o[j] = "j"; return o; })(), curPass: i });
+        while (true) {
+          if (j === 0) {
+            snap("stop0", [2], "j = 0: j > 0 yanlış, döngü biter. " + kv + " en başa kadar geldi. (a[j − 1] hiç değerlendirilmedi: && soldaki yanlışsa sağa bakmaz, karşılaştırma yapılmadı.)", { hot: [0], marks: { 0: "j" }, curPass: i });
+            break;
+          }
+          comps++; pc++;
+          var A = a[j - 1], B = a[j], gt = A.v > B.v;
+          var m2 = {}; m2[j - 1] = "j−1"; m2[j] = "j";
+          snap("cmp", [2], "while koşulu: j = " + j + " > 0 doğru. a[" + (j - 1) + "] = " + lab(A) + " > a[" + j + "] = " + lab(B) + " mi? " + (gt ? "Evet, büyük solda kalmış: yer değiştirilecek." : (A.v === B.v ? "Hayır (eşit, büyük değil): döngü biter." : "Hayır: " + lab(B) + " yerini buldu, döngü biter.")) + " Bu " + comps + ". karşılaştırma.", { cmp: [j - 1], hot: [j], marks: m2, curPass: i });
+          if (!gt) break;
+          temp = { v: B.v, t: B.t };
+          snap("swap1", [3], "temp = a[j]: a[" + j + "] = " + lab(B) + " temp'e yedeklendi. Dizi henüz değişmedi.", { hot: [j], marks: (function () { var o = {}; o[j] = "j"; return o; })(), curPass: i });
+          a[j] = { v: A.v, t: A.t, id: A.id };
+          snap("swap2", [4], "a[j] = a[j − 1]: a[" + (j - 1) + "] = " + lab(A) + " değeri a[" + j + "]'nin üstüne yazıldı. " + lab(B) + " şimdilik yalnızca temp'te.", { write: [j], marks: (function () { var o = {}; o[j] = "j"; return o; })(), curPass: i });
+          a[j - 1] = { v: temp.v, t: temp.t, id: B.id };
+          moves++; pm++;
+          removed.push(A.id + "-" + B.id);
+          snap("swap3", [5], "a[j − 1] = temp: " + lab(B) + " değeri a[" + (j - 1) + "]'e yazıldı. Yer değiştirme tamam: [" + a.map(lab).join(", ") + "]. Bu swap bir inversion'ı (" + lab(A) + ", " + lab(B) + ") giderdi.", { write: [j - 1], marks: (function () { var o = {}; o[j - 1] = "j−1"; return o; })(), curPass: i });
+          temp = null; j--;
+          snap("dec", [6], "j--: j = " + j + ". temp, while bloğunun sonunda kapsam dışı kaldı. " + kv + " artık a[" + j + "] konumunda.", { hot: [j], marks: (function () { var o = {}; o[j] = "j"; return o; })(), curPass: i });
+        }
+        passes.push({ key: kv, comps: pc, moves: pm, arr: a.map(lab) });
+        passesDone = i;
+        snap("passend", [7, 8], "while bitti: " + kv + " a[" + j + "] konumuna yerleşti. Tur " + i + " sonu, a[0…" + i + "] sıralı: [" + a.slice(0, i + 1).map(lab).join(", ") + "]. Bu turda " + pc + " karşılaştırma ve " + pm + " swap yapıldı.", { hot: [j], marks: (function () { var o = {}; o[j] = "j"; return o; })(), curPass: i });
+      } else {
+        key = { v: a[i].v, t: a[i].t };
+        j = i - 1;
+        snap("keyset", [0, 1], "Tur " + i + " (i = " + i + "): key = a[" + i + "] = " + kv + " ayrı bir değişkende saklandı. a[" + i + "] hücresi artık serbest sayılır (key güvende), büyük elemanlar buraya kaydırılabilir.", { hole: i, marks: (function () { var o = {}; o[i] = "i"; return o; })(), curPass: i });
+        snap("jinit", [2], "j = i − 1 = " + j + ": karşılaştırma, sıralı bölgenin son elemanı a[" + j + "] = " + lab(a[j]) + " ile başlar.", { hole: j + 1, hot: [], marks: (function () { var o = {}; o[j] = "j"; return o; })(), curPass: i });
+        while (true) {
+          if (j < 0) {
+            snap("stop0", [3], "j = −1: j >= 0 yanlış, döngü biter. " + kv + " en başa kadar geldi. (a[j] hiç değerlendirilmedi: karşılaştırma yapılmadı.)", { hole: 0, marks: {}, curPass: i });
+            break;
+          }
+          comps++; pc++;
+          var E = a[j], gt2 = E.v > key.v;
+          var m3 = {}; m3[j] = "j"; if (j + 1 <= n - 1) m3[j + 1] = "j+1";
+          snap("cmp", [3], "while koşulu: j = " + j + " >= 0 doğru. a[" + j + "] = " + lab(E) + " > key = " + kv + " mi? " + (gt2 ? "Evet: " + lab(E) + " bir sağa kaydırılacak." : (E.v === key.v ? "Hayır (eşit, büyük değil): döngü biter." : "Hayır: key yerini buldu, döngü biter.")) + " Bu " + comps + ". karşılaştırma.", { cmp: [j], hole: j + 1, marks: m3, curPass: i });
+          if (!gt2) break;
+          a[j + 1] = { v: E.v, t: E.t, id: E.id };
+          moves++; pm++;
+          removed.push(E.id + "-" + key.id);
+          var m4 = {}; m4[j + 1] = "j+1";
+          snap("shift", [4], "a[j + 1] = a[j]: " + lab(E) + " değeri a[" + (j + 1) + "]'e kopyalandı (bir sağa kaydı). Dizide " + lab(E) + " şimdilik iki yerde; key güvende olduğu için bir şey kaybolmadı. Bu kaydırma bir inversion'ı (" + lab(E) + ", " + kv + ") giderdi.", { write: [j + 1], hole: j, marks: m4, curPass: i });
+          j--;
+          var m5 = {}; m5[j + 1] = "j+1"; if (j >= 0) m5[j] = "j";
+          snap("dec", [5], "j--: j = " + j + ". key'in gideceği boşluk şimdi a[" + (j + 1) + "] hücresi.", { hole: j + 1, marks: m5, curPass: i });
+        }
+        a[j + 1] = { v: key.v, t: key.t, id: key.id };
+        passes.push({ key: kv, comps: pc, moves: pm, arr: a.map(lab) });
+        passesDone = i;
+        snap("passend", [7, 8], "a[j + 1] = key: " + kv + " a[" + (j + 1) + "] konumuna yazıldı. Tur " + i + " sonu, a[0…" + i + "] sıralı: [" + a.slice(0, i + 1).map(lab).join(", ") + "]. Bu turda " + pc + " karşılaştırma ve " + pm + " kaydırma yapıldı.", { write: [j + 1], marks: (function () { var o = {}; o[j + 1] = "j+1"; return o; })(), curPass: i });
+        key = null;
+      }
+    }
+    reg = n - 1; temp = null; key = null;
+    snap("final", [], "Dizi sıralandı: [" + a.map(lab).join(", ") + "]. Toplam " + (n - 1) + " tur, " + comps + " karşılaştırma, " + moves + " " + mvw + ".", { curPass: n - 1 });
+    return { steps: steps, inv: inv, passes: passes, comps: comps, moves: moves, mvw: mvw };
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var scKey = "ab", variant = "swap", S = null, steps = [], cur = 0, timer = null, N = 0, codeLines = [];
+
+  function buildCode() {
+    var el = $("code"); el.innerHTML = ""; codeLines = [];
+    CODES[variant].forEach(function (txt, i) {
+      var row = document.createElement("div"); row.className = "cl";
+      var no = document.createElement("span"); no.className = "no"; no.textContent = i + 1;
+      var tx = document.createElement("span"); tx.textContent = txt;
+      row.appendChild(no); row.appendChild(tx);
+      el.appendChild(row);
+      codeLines.push(row);
+    });
+  }
+  var slider = $("slider");
+
+  function load(key) {
+    stop();
+    scKey = key;
+    buildCode();
+    S = sim(SC[key].arr, variant);
+    steps = S.steps;
+    N = SC[key].arr.length;
+    slider.max = steps.length - 1;
+    cur = 0;
+    document.querySelectorAll("#seg button").forEach(function (b) { b.setAttribute("aria-selected", b.dataset.sc === key ? "true" : "false"); });
+    document.querySelectorAll("#variant button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.v === variant ? "true" : "false"); });
+    $("qtext").innerHTML = SC[key].q;
+    document.querySelectorAll(".mvw").forEach(function (e) { e.textContent = S.mvw; });
+    $("ans").innerHTML = SC[key].ans(S, S.mvw).map(function (t) { return "<li>" + t + "</li>"; }).join("");
+    $("s-movl").textContent = S.mvw === "swap" ? "swap (yer değiştirme)" : "kaydırma (a[j+1] = a[j])";
+    $("calccard").hidden = key !== "c1" && key !== "c2";
+    updateCalc();
+    render();
+  }
+
+  function updateCalc() {
+    var n = parseInt($("nin").value, 10);
+    var mv = S ? S.mvw : "swap";
+    if (!(n >= 2)) { $("calc1").textContent = ""; $("calc2").textContent = ""; return; }
+    $("calc1").innerHTML = "En iyi durum (sıralı): <b>" + (n - 1).toLocaleString("tr-TR") + "</b> karşılaştırma, <b>0</b> " + mv + " → O(n)";
+    $("calc2").innerHTML = "En kötü durum (ters sıralı): <b>" + (n * (n - 1) / 2).toLocaleString("tr-TR") + "</b> karşılaştırma, <b>" + (n * (n - 1) / 2).toLocaleString("tr-TR") + "</b> " + mv + " (n(n−1)/2) → O(n²)";
+  }
+  $("nin").oninput = updateCalc;
+
+  function render() {
+    var s = steps[cur];
+    var isMove = ["swap1", "swap2", "swap3", "dec", "shift"].indexOf(s.kind) >= 0;
+    codeLines.forEach(function (r, i) {
+      r.className = "cl" + (s.lines.indexOf(i) >= 0 ? " on" : "");
+      var old = r.querySelector(".note"); if (old) r.removeChild(old);
+      var nt = s.note && s.note[i];
+      if (nt && s.lines.indexOf(i) >= 0) {
+        var sp = document.createElement("span"); sp.className = "note" + (nt[1] ? " " + nt[1] : ""); sp.textContent = "// " + nt[0];
+        r.appendChild(sp);
+      }
+    });
+    $("running").innerHTML = s.kind === "final" ? "Algoritma bitti." : "Şu an: <b>tur " + s.curPass + "</b> / " + (N - 1) + ", i = " + s.curPass + ", j = " + s.j;
+    $("stepno").textContent = "Adım " + (cur + 1) + " / " + steps.length;
+    $("explain").textContent = s.text;
+
+    var arr = $("arr"); arr.innerHTML = "";
+    s.arr.forEach(function (x, idx) {
+      var cls = "tile";
+      if (idx <= s.reg) cls += " sorted";
+      if (s.cmp.indexOf(idx) >= 0) cls += " isj";
+      if (s.hot.indexOf(idx) >= 0) cls += " ismin";
+      if (s.hole === idx) cls += " hole";
+      if (s.write.indexOf(idx) >= 0) cls += " swapped";
+      var d = document.createElement("div");
+      d.className = cls;
+      d.innerHTML = "<div class=\"box\">" + x.v + (x.t ? "<small class=\"t" + x.t + "\">" + x.t + "</small>" : "") + "</div><div class=\"ix\">[" + idx + "]</div><div class=\"mk\">" + (s.marks[idx] || "") + "</div>";
+      arr.appendChild(d);
+    });
+
+    var tb0 = $("tbox");
+    if (variant === "swap") {
+      tb0.textContent = s.temp ? "temp = " + s.temp.v + (s.temp.t || "") : "temp –";
+      tb0.className = "tbox" + (s.temp ? " set" : "") + (s.kind === "swap1" ? " flash" : "");
+      $("tempwhy").textContent = s.temp ? "temp yer değiştirme bitene kadar ilk değeri saklıyor" : "temp yalnızca while bloğunun içinde var";
+    } else {
+      tb0.textContent = s.key ? "key = " + s.key.v + (s.key.t || "") : "key –";
+      tb0.className = "tbox" + (s.key ? " set" : "") + (s.kind === "keyset" ? " flash" : "");
+      $("tempwhy").textContent = s.key ? "key, tur boyunca elemanı güvende tutuyor" : "key her turun başında a[i] ile doldurulur";
+    }
+    $("jchip").textContent = s.kind === "final" ? "j = –" : "j = " + s.j;
+
+    $("s-cmp").textContent = s.comps;
+    $("s-mov").textContent = s.moves;
+    $("s-pass").textContent = s.passesDone;
+    $("cmpnote").textContent = "Her tur, elemanın ne kadar sola ilerlediğine göre değişir; sıralı bölge her turda bir eleman büyür. Şu ana kadar: " + s.comps + " karşılaştırma, " + s.moves + " " + S.mvw + ".";
+
+    var inv = $("inv"); inv.innerHTML = "";
+    var fixed = 0;
+    S.inv.forEach(function (x) {
+      var done = s.removed.indexOf(x.a + "-" + x.b) >= 0;
+      if (done) fixed++;
+      var c = document.createElement("span");
+      c.className = "chip" + (done ? " fixed" : "");
+      c.textContent = "(" + x.label.replace(">", ", ") + ")";
+      inv.appendChild(c);
+    });
+    if (!S.inv.length) inv.innerHTML = "<span class=\"msg\">Bu dizide hiç inversion yok (zaten sıralı).</span>";
+    $("invnote").textContent = "Başlangıçta " + S.inv.length + " inversion var. Giderilen: " + fixed + ", kalan: " + (S.inv.length - fixed) + ". Yapılan " + S.mvw + ": " + s.moves + ". Her " + S.mvw + " tam bir inversion'ı giderir.";
+
+    var tb = "<tr><th>Tur</th><th>key</th><th>Karşılaştırma</th><th>" + (S.mvw === "swap" ? "Swap" : "Kaydırma") + "</th><th>Tur sonu dizi</th></tr>";
+    for (var p = 1; p < N; p++) {
+      var done = s.passes[p - 1];
+      if (done) {
+        tb += "<tr" + (s.curPass === p && s.kind === "passend" ? " class=\"cur\"" : "") + "><td>" + p + "</td><td class=\"mono\">" + done.key + "</td><td>" + done.comps + "</td><td>" + done.moves + "</td><td class=\"mono\">[" + done.arr.join(", ") + "]</td></tr>";
+      } else {
+        tb += "<tr class=\"pending" + (s.curPass === p ? " cur" : "") + "\"><td>" + p + "</td><td class=\"mono\">a[" + p + "]</td><td>–</td><td>–</td><td>–</td></tr>";
+      }
+    }
+    $("tbl").innerHTML = tb;
+
+    slider.value = cur;
+    $("pos").textContent = (cur + 1) + "/" + steps.length;
+    $("prev").disabled = cur === 0; $("reset").disabled = cur === 0;
+    var atEnd = cur === steps.length - 1;
+    $("next").disabled = atEnd;
+    $("skip").disabled = atEnd;
+    $("skipmove").disabled = !isMove;
+    if (atEnd) stop();
+  }
+
+  function go(i) { cur = Math.max(0, Math.min(steps.length - 1, i)); render(); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } $("play").textContent = "▶ Oynat"; }
+  function play() {
+    if (cur === steps.length - 1) cur = 0;
+    $("play").textContent = "⏸ Duraklat";
+    timer = setInterval(function () { go(cur + 1); }, parseInt($("speed").value, 10));
+    render();
+  }
+  $("next").onclick = function () { stop(); go(cur + 1); };
+  $("prev").onclick = function () { stop(); go(cur - 1); };
+  $("reset").onclick = function () { stop(); go(0); };
+  $("play").onclick = function () { timer ? stop() : play(); };
+  $("skipmove").onclick = function () {
+    stop();
+    var j = cur + 1;
+    while (steps[j] && ["swap1", "swap2", "swap3", "dec", "shift"].indexOf(steps[j].kind) >= 0) j++;
+    go(j);
+  };
+  $("skip").onclick = function () {
+    stop();
+    var j = cur + 1;
+    while (steps[j] && steps[j].kind !== "passend" && steps[j].kind !== "final") j++;
+    go(j);
+  };
+  $("speed").onchange = function () { if (timer) { stop(); play(); } };
+  slider.oninput = function () { stop(); go(parseInt(slider.value, 10)); };
+  document.querySelectorAll("#seg button").forEach(function (b) {
+    b.onclick = function () {
+      if (b.dataset.sc === "d") variant = "key";
+      load(b.dataset.sc);
+    };
+  });
+  document.querySelectorAll("#variant button").forEach(function (b) {
+    b.onclick = function () { variant = b.dataset.v; load(scKey); };
+  });
+  document.addEventListener("keydown", function (e) {
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT") return;
+    if (e.key === "ArrowRight") { e.preventDefault(); stop(); go(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); stop(); go(cur - 1); }
+  });
+
+  load("ab");
+})();
+</script>
+
+</body></html>
